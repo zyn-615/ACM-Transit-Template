@@ -290,10 +290,11 @@
     <!-- 加载 JavaScript -->
     <script src="js/storage.js"></script>
     <script src="js/problems.js"></script>
+    <script src="js/search.js"></script>
     
     <script>
         // 全局变量
-        let storage, problemManager;
+        let storage, problemManager, globalSearch;
         let currentProblems = [];
         let currentPage = 1;
         const itemsPerPage = 15;
@@ -308,6 +309,14 @@
                 // 初始化存储和管理器
                 storage = new DataStorage();
                 problemManager = new ProblemManager(storage);
+
+                // 初始化全局搜索
+                try {
+                    globalSearch = new GlobalSearchManager(storage);
+                    console.log('全局搜索初始化完成');
+                } catch (error) {
+                    console.error('初始化全局搜索失败:', error);
+                }
 
                 // 等待初始化完成
                 await new Promise(resolve => {
@@ -593,27 +602,43 @@
             document.getElementById('problem-status').value = 'unsolved';
         }
 
-        // 搜索处理
+        // 防抖搜索处理
+        let searchTimeout;
         function handleSearch() {
-            const query = document.getElementById('search-query').value;
-            const platform = document.getElementById('filter-platform').value;
-            const status = document.getElementById('filter-status').value;
-            const selectedTag = document.getElementById('filter-tags').value;
-            const minDifficulty = document.getElementById('min-difficulty').value;
-            const maxDifficulty = document.getElementById('max-difficulty').value;
-            
-            const criteria = {};
-            if (query) criteria.search = query;
-            if (platform) criteria.platform = platform;
-            if (status) criteria.status = status;
-            if (selectedTag) criteria.tags = [selectedTag];
-            if (minDifficulty) criteria.minDifficulty = parseInt(minDifficulty);
-            if (maxDifficulty) criteria.maxDifficulty = parseInt(maxDifficulty);
-            
-            currentProblems = problemManager.filterProblems(criteria);
-            applySorting();
-            currentPage = 1;
-            renderTable();
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(performSearch, 300);
+        }
+
+        // 执行搜索
+        function performSearch() {
+            try {
+                const query = document.getElementById('search-query')?.value || '';
+                const platform = document.getElementById('filter-platform')?.value || '';
+                const status = document.getElementById('filter-status')?.value || '';
+                const selectedTag = document.getElementById('filter-tags')?.value || '';
+                const minDifficulty = document.getElementById('min-difficulty')?.value || '';
+                const maxDifficulty = document.getElementById('max-difficulty')?.value || '';
+                
+                console.log('执行搜索，条件:', { query, platform, status, selectedTag, minDifficulty, maxDifficulty });
+                
+                const criteria = {};
+                if (query.trim()) criteria.search = query.trim();
+                if (platform) criteria.platform = platform;
+                if (status) criteria.status = status;
+                if (selectedTag) criteria.tags = [selectedTag];
+                if (minDifficulty) criteria.minDifficulty = parseInt(minDifficulty);
+                if (maxDifficulty) criteria.maxDifficulty = parseInt(maxDifficulty);
+                
+                currentProblems = problemManager.filterProblems(criteria);
+                console.log('搜索结果:', currentProblems.length, '道题目');
+                
+                applySorting();
+                currentPage = 1;
+                renderTable();
+            } catch (error) {
+                console.error('搜索失败:', error);
+                showNotification('搜索失败: ' + error.message, 'error');
+            }
         }
 
         // 排序处理
@@ -637,26 +662,63 @@
             renderTable();
         }
 
-        // 应用排序
+        // 应用排序 - 修复版本：对已筛选的结果进行排序
         function applySorting() {
-            currentProblems = problemManager.sortProblems(currentSort.field, currentSort.order);
+            if (currentProblems && currentProblems.length > 0) {
+                // 对当前筛选结果进行排序
+                currentProblems.sort((a, b) => {
+                    let aValue = a[currentSort.field];
+                    let bValue = b[currentSort.field];
+
+                    // 处理日期类型
+                    if (currentSort.field === 'addedTime' || currentSort.field === 'solvedTime') {
+                        aValue = aValue ? new Date(aValue) : new Date(0);
+                        bValue = bValue ? new Date(bValue) : new Date(0);
+                    }
+
+                    // 处理数字类型（难度）
+                    if (currentSort.field === 'difficulty') {
+                        aValue = aValue || 0;
+                        bValue = bValue || 0;
+                    }
+
+                    // 处理字符串类型
+                    if (typeof aValue === 'string' && typeof bValue === 'string') {
+                        const result = aValue.localeCompare(bValue, 'zh-CN');
+                        return currentSort.order === 'desc' ? -result : result;
+                    }
+
+                    // 处理数字和日期类型
+                    if (aValue < bValue) return currentSort.order === 'desc' ? 1 : -1;
+                    if (aValue > bValue) return currentSort.order === 'desc' ? -1 : 1;
+                    return 0;
+                });
+            }
         }
 
         // 清空筛选
         function clearFilters() {
-            document.getElementById('search-query').value = '';
-            document.getElementById('filter-platform').value = '';
-            document.getElementById('filter-status').value = '';
-            document.getElementById('filter-tags').value = '';
-            document.getElementById('min-difficulty').value = '';
-            document.getElementById('max-difficulty').value = '';
-            document.getElementById('sort-by').value = 'addedTime';
-            
-            currentProblems = problemManager.getAllProblems();
-            currentSort = { field: 'addedTime', order: 'desc' };
-            applySorting();
-            currentPage = 1;
-            renderTable();
+            try {
+                document.getElementById('search-query').value = '';
+                document.getElementById('filter-platform').value = '';
+                document.getElementById('filter-status').value = '';
+                document.getElementById('filter-tags').value = '';
+                document.getElementById('min-difficulty').value = '';
+                document.getElementById('max-difficulty').value = '';
+                document.getElementById('sort-by').value = 'addedTime';
+                
+                // 重新获取所有题目
+                currentProblems = problemManager.getAllProblems();
+                currentSort = { field: 'addedTime', order: 'desc' };
+                applySorting();
+                currentPage = 1;
+                renderTable();
+                
+                console.log('筛选已清空，显示', currentProblems.length, '道题目');
+            } catch (error) {
+                console.error('清空筛选失败:', error);
+                showNotification('清空筛选失败: ' + error.message, 'error');
+            }
         }
 
         // 查看题目详情页面

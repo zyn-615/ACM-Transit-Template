@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>多篇题解功能测试</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/solutions.css">
+</head>
+<body>
+    <div class="main-content">
+        <h1>多篇题解功能测试</h1>
+        <p>测试题目和比赛的多篇题解管理功能：</p>
+        
+        <div class="card">
+            <div class="card-header">
+                <h2>测试题目题解</h2>
+            </div>
+            <div class="form-container">
+                <p>以下题目已包含多篇题解，可以测试查看、添加、编辑、删除功能：</p>
+                
+                <div class="btn-group">
+                    <a href="problem-detail.html?id=cf-1920a" class="btn btn-primary">
+                        CF 1920A - 包含2篇题解
+                    </a>
+                    <a href="problem-detail.html?id=cf-1920b" class="btn btn-primary">
+                        CF 1920B - 测试添加题解
+                    </a>
+                    <a href="problem-detail.html?id=abc-330a" class="btn btn-primary">
+                        ABC 330A - 测试题解管理
+                    </a>
+                </div>
+                
+                <div class="mt-4">
+                    <h4>题解功能测试清单：</h4>
+                    <ul class="list-disc list-inside">
+                        <li>✅ 查看已有题解列表</li>
+                        <li>✅ 添加新题解（官方、个人、备选方案等）</li>
+                        <li>✅ 编辑题解信息</li>
+                        <li>✅ 删除不需要的题解</li>
+                        <li>✅ 题解类型标识（图标和颜色）</li>
+                        <li>✅ 支持多种编程语言</li>
+                        <li>✅ 题解标签和描述</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header">
+                <h2>测试比赛题解</h2>
+            </div>
+            <div class="form-container">
+                <p>比赛也支持多篇题解（总结、官方题解等）：</p>
+                
+                <div class="btn-group">
+                    <a href="contest-detail.html?id=cf-round-920" class="btn btn-success">
+                        CF Round 920 - 包含比赛总结和官方题解
+                    </a>
+                    <a href="contest-detail.html?id=atcoder-abc-330" class="btn btn-success">
+                        ABC 330 - 测试比赛题解管理
+                    </a>
+                </div>
+                
+                <div class="mt-4">
+                    <h4>比赛题解类型：</h4>
+                    <div class="flex flex-wrap gap-2 mt-2">
+                        <span class="solution-type-badge" style="background-color: #6f42c1">📝 比赛总结</span>
+                        <span class="solution-type-badge" style="background-color: #007bff">🏛️ 官方题解</span>
+                        <span class="solution-type-badge" style="background-color: #fd7e14">🔍 深度分析</span>
+                        <span class="solution-type-badge" style="background-color: #dc3545">🎥 视频题解</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header">
+                <h2>题解数据结构</h2>
+            </div>
+            <div class="form-container">
+                <p>每个题解包含以下信息：</p>
+                
+                <div class="bg-gray-100 p-4 rounded">
+                    <pre><code>{
+  "id": "sol-cf1920a-1",
+  "title": "官方题解",
+  "path": "./files/solutions/cf-1920a-official.md",
+  "type": "official",
+  "language": "cpp",
+  "author": "Codeforces", 
+  "description": "官方发布的标准解法",
+  "addedTime": "2024-01-15T21:00:00Z",
+  "tags": ["math", "implementation"]
+}</code></pre>
+                </div>
+                
+                <div class="mt-4">
+                    <h4>支持的题解类型：</h4>
+                    <ul class="list-disc list-inside">
+                        <li><strong>official</strong> - 🏛️ 官方题解</li>
+                        <li><strong>personal</strong> - 👤 个人题解</li>
+                        <li><strong>alternative</strong> - 💡 备选方案</li>
+                        <li><strong>video</strong> - 🎥 视频题解</li>
+                        <li><strong>summary</strong> - 📝 比赛总结</li>
+                        <li><strong>analysis</strong> - 🔍 深度分析</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header">
+                <h2>使用说明</h2>
+            </div>
+            <div class="form-container">
+                <div class="alert alert-info">
+                    <h4>如何测试多篇题解功能：</h4>
+                    <ol class="list-decimal list-inside">
+                        <li>点击上方的题目链接进入题目详情页面</li>
+                        <li>滚动到"题解管理"部分</li>
+                        <li>查看已有的题解列表（CF 1920A有2篇示例题解）</li>
+                        <li>点击"添加题解"按钮测试添加新题解</li>
+                        <li>尝试编辑或删除现有题解</li>
+                        <li>观察不同题解类型的图标和颜色标识</li>
+                    </ol>
+                </div>
+                
+                <div class="btn-group mt-4">
+                    <a href="index.html" class="btn btn-secondary">返回仪表盘</a>
+                    <a href="test-problem-detail.html" class="btn btn-secondary">测试题目详情</a>
+                    <a href="test-search.html" class="btn btn-secondary">测试搜索功能</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html> 

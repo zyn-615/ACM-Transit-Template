@@ -1,0 +1,293 @@
+/**
+ * ACM中转站 - 题解管理样式
+ * 多篇题解的展示和管理界面样式
+ */
+
+/* 题解列表容器 */
+.solutions-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+/* 题解项目 */
+.solution-item {
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 1.5rem;
+    background: white;
+    transition: all 0.2s ease;
+}
+
+.solution-item:hover {
+    border-color: #3b82f6;
+    box-shadow: 0 2px 8px rgba(59, 130, 246, 0.1);
+}
+
+/* 题解头部 */
+.solution-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 1rem;
+}
+
+.solution-title-area {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.solution-title {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.solution-title h4 {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #1f2937;
+    margin: 0;
+}
+
+.solution-icon {
+    font-size: 1.2rem;
+}
+
+.solution-type-badge {
+    display: inline-block;
+    padding: 0.25rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: white;
+    text-transform: uppercase;
+    letter-spacing: 0.025em;
+}
+
+/* 题解操作按钮 */
+.solution-actions {
+    display: flex;
+    gap: 0.5rem;
+    flex-shrink: 0;
+}
+
+.solution-actions .btn {
+    padding: 0.375rem 0.75rem;
+    font-size: 0.75rem;
+}
+
+/* 题解元信息 */
+.solution-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-bottom: 0.75rem;
+    font-size: 0.875rem;
+    color: #6b7280;
+}
+
+.solution-author {
+    font-weight: 500;
+}
+
+.solution-language {
+    background: #f3f4f6;
+    padding: 0.125rem 0.5rem;
+    border-radius: 4px;
+    font-family: 'Courier New', monospace;
+    font-weight: 600;
+    color: #374151;
+}
+
+.solution-time {
+    color: #9ca3af;
+}
+
+/* 题解描述 */
+.solution-description {
+    margin-bottom: 0.75rem;
+    color: #4b5563;
+    line-height: 1.5;
+    font-size: 0.9rem;
+}
+
+/* 题解标签 */
+.solution-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.solution-tags .tag {
+    background: #eff6ff;
+    color: #1d4ed8;
+    border: 1px solid #dbeafe;
+    padding: 0.125rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 500;
+}
+
+/* 无题解状态 */
+.no-solutions {
+    background: #f9fafb;
+    border: 2px dashed #d1d5db;
+    border-radius: 8px;
+    padding: 2rem;
+    text-align: center;
+}
+
+.no-solutions p {
+    color: #6b7280;
+    margin-bottom: 1rem;
+}
+
+/* 题解头部 */
+.solutions-header {
+    margin-bottom: 1.5rem;
+}
+
+.solutions-header h3 {
+    color: #1f2937;
+    margin: 0;
+}
+
+/* 题解模态框样式 */
+#solution-modal .modal-content {
+    max-width: 600px;
+    width: 90%;
+}
+
+#solution-modal .form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+}
+
+#solution-modal .form-group {
+    margin-bottom: 1rem;
+}
+
+#solution-modal .form-label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+    color: #374151;
+}
+
+#solution-modal .form-control {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    font-size: 0.875rem;
+}
+
+#solution-modal .form-control:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+#solution-modal textarea.form-control {
+    resize: vertical;
+    min-height: 80px;
+}
+
+#solution-modal .modal-actions {
+    display: flex;
+    gap: 1rem;
+    justify-content: flex-end;
+    margin-top: 1.5rem;
+    padding-top: 1rem;
+    border-top: 1px solid #e5e7eb;
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+    .solution-header {
+        flex-direction: column;
+        gap: 1rem;
+    }
+
+    .solution-actions {
+        align-self: flex-start;
+    }
+
+    .solution-meta {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    #solution-modal .form-grid {
+        grid-template-columns: 1fr;
+    }
+
+    #solution-modal .modal-actions {
+        flex-direction: column;
+    }
+}
+
+/* 动画效果 */
+@keyframes solutionSlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.solution-item {
+    animation: solutionSlideIn 0.3s ease-out;
+}
+
+/* 题解类型特定样式 */
+.solution-item[data-solution-type="official"] {
+    border-left: 4px solid #007bff;
+}
+
+.solution-item[data-solution-type="personal"] {
+    border-left: 4px solid #28a745;
+}
+
+.solution-item[data-solution-type="alternative"] {
+    border-left: 4px solid #ffc107;
+}
+
+.solution-item[data-solution-type="video"] {
+    border-left: 4px solid #dc3545;
+}
+
+.solution-item[data-solution-type="summary"] {
+    border-left: 4px solid #6f42c1;
+}
+
+.solution-item[data-solution-type="analysis"] {
+    border-left: 4px solid #fd7e14;
+}
+
+/* 加载状态 */
+.solutions-loading {
+    text-align: center;
+    padding: 2rem;
+    color: #6b7280;
+}
+
+.solutions-loading::before {
+    content: "⏳";
+    margin-right: 0.5rem;
+}
+
+/* 空状态美化 */
+.no-solutions::before {
+    content: "📝";
+    display: block;
+    font-size: 2rem;
+    margin-bottom: 1rem;
+} 

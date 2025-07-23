@@ -1,9 +1,59 @@
 {
-  "contests": [],
+  "contests": [
+    {
+      "id": "cf-round-920",
+      "name": "Codeforces Round 920 (Div. 2)",
+      "platform": "Codeforces",
+      "date": "2024-01-15",
+      "url": "https://codeforces.com/contest/1920",
+      "rank": "347/12000",
+      "solved": 3,
+      "totalProblems": 5,
+      "ratingChange": "+45",
+      "notes": "表现不错，C题卡了很久",
+      "addedTime": "2024-01-15T20:30:00Z",
+      "solutions": [
+        {
+          "id": "sol-cf920-1",
+          "title": "比赛总结",
+          "path": "./files/summaries/cf-round-920-summary.md",
+          "type": "summary",
+          "language": "markdown",
+          "author": "本人",
+          "description": "完整的比赛总结和反思",
+          "addedTime": "2024-01-16T09:00:00Z",
+          "tags": ["contest-summary", "analysis"]
+        },
+        {
+          "id": "sol-cf920-2",
+          "title": "官方题解",
+          "path": "./files/solutions/cf-round-920-editorial.md",
+          "type": "official",
+          "language": "multiple",
+          "author": "Codeforces",
+          "description": "官方发布的所有题目题解",
+          "addedTime": "2024-01-16T12:00:00Z",
+          "tags": ["editorial", "official"]
+        }
+      ]
+    },
+    {
+      "id": "atcoder-abc-330",
+      "name": "AtCoder Beginner Contest 330",
+      "platform": "AtCoder",
+      "date": "2024-01-10",
+      "url": "https://atcoder.jp/contests/abc330",
+      "rank": "2500/8000",
+      "solved": 4,
+      "totalProblems": 6,
+      "notes": "前4题很顺利",
+      "addedTime": "2024-01-10T15:00:00Z"
+    }
+  ],
   "version": "1.0",
   "lastModified": "2025-01-22T00:00:00.000Z",
   "metadata": {
-    "totalContests": 0,
+    "totalContests": 2,
     "createdBy": "ACM中转站",
     "description": "ACM竞赛记录数据库 - 简化版多人协作",
     "createdAt": "2025-01-22"

@@ -92,15 +92,30 @@
                 <button type="submit" form="penalty-form" class="btn btn-primary">保存记录</button>
             </div>
         </div>
+        
+        <!-- ICPC风格横条显示 -->
+        <div class="card">
+            <div class="card-header">
+                <h2 class="card-title">比赛面板 (ICPC风格)</h2>
+                <div class="card-actions">
+                    <button class="btn btn-outline btn-sm" onclick="toggleBoardView()">切换视图</button>
+                </div>
+            </div>
+            <div id="contest-board-container">
+                <!-- 横条显示面板将在这里渲染 -->
+            </div>
+        </div>
     </div>
 
     <!-- 加载 JavaScript -->
     <script src="js/storage.js"></script>
     <script src="js/contest-detail.js"></script>
+    <script src="js/contest-board-manager.js"></script>
+    <script src="js/search.js"></script>
     
     <script>
         // 全局变量
-        let storage, contestDetailManager;
+        let storage, contestDetailManager, globalSearch;
         let contestId = null;
 
         // 从URL获取比赛ID
@@ -122,6 +137,14 @@
                 // 初始化存储和管理器
                 storage = new DataStorage();
                 contestDetailManager = new ContestDetailManager(storage);
+
+                // 初始化全局搜索
+                try {
+                    globalSearch = new GlobalSearchManager(storage);
+                    console.log('全局搜索初始化完成');
+                } catch (error) {
+                    console.error('初始化全局搜索失败:', error);
+                }
 
                 // 初始化比赛详情管理器
                 await contestDetailManager.initialize(contestId);
@@ -294,6 +317,23 @@
         // 返回比赛列表
         function goBack() {
             window.location.href = 'contests.html';
+        }
+
+        // 切换比赛面板视图
+        function toggleBoardView() {
+            const container = document.getElementById('contest-board-container');
+            if (!container) return;
+
+            // 切换横条显示和网格显示
+            if (container.style.display === 'none') {
+                container.style.display = 'block';
+                window.contestBoardManager.renderHorizontalBoard('contest-board-container');
+            } else {
+                container.style.display = container.style.display === 'block' ? 'none' : 'block';
+                if (container.style.display === 'block') {
+                    window.contestBoardManager.renderHorizontalBoard('contest-board-container');
+                }
+            }
         }
 
         // 显示通知

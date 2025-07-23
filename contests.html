@@ -304,10 +304,11 @@
     <script src="js/storage.js"></script>
     <script src="js/contest-generator.js"></script>
     <script src="js/contests.js"></script>
+    <script src="js/search.js"></script>
     
     <script>
         // 全局变量
-        let storage, contestManager;
+        let storage, contestManager, globalSearch;
         let currentContests = [];
         let currentPage = 1;
         const itemsPerPage = 10;
@@ -319,6 +320,14 @@
                 // 初始化存储和管理器
                 storage = new DataStorage();
                 contestManager = new ContestManager(storage);
+
+                // 初始化全局搜索
+                try {
+                    globalSearch = new GlobalSearchManager(storage);
+                    console.log('全局搜索初始化完成');
+                } catch (error) {
+                    console.error('初始化全局搜索失败:', error);
+                }
 
                 // 等待初始化完成
                 await new Promise(resolve => {
@@ -505,19 +514,35 @@
             document.getElementById('contest-date').value = new Date().toISOString().split('T')[0];
         }
 
-        // 搜索处理
+        // 防抖搜索处理
+        let searchTimeout;
         function handleSearch() {
-            const query = document.getElementById('search-query').value;
-            const platform = document.getElementById('filter-platform').value;
-            
-            const criteria = {};
-            if (query) criteria.search = query;
-            if (platform) criteria.platform = platform;
-            
-            currentContests = contestManager.filterContests(criteria);
-            applySorting();
-            currentPage = 1;
-            renderTable();
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(performSearch, 300);
+        }
+
+        // 执行搜索
+        function performSearch() {
+            try {
+                const query = document.getElementById('search-query')?.value || '';
+                const platform = document.getElementById('filter-platform')?.value || '';
+                
+                console.log('执行比赛搜索，条件:', { query, platform });
+                
+                const criteria = {};
+                if (query.trim()) criteria.search = query.trim();
+                if (platform) criteria.platform = platform;
+                
+                currentContests = contestManager.filterContests(criteria);
+                console.log('搜索结果:', currentContests.length, '场比赛');
+                
+                applySorting();
+                currentPage = 1;
+                renderTable();
+            } catch (error) {
+                console.error('比赛搜索失败:', error);
+                showNotification('搜索失败: ' + error.message, 'error');
+            }
         }
 
         // 排序处理
@@ -549,9 +574,38 @@
             renderTable();
         }
 
-        // 应用排序
+        // 应用排序 - 修复版本：对已筛选的结果进行排序
         function applySorting() {
-            currentContests = contestManager.sortContests(currentSort.field, currentSort.order);
+            if (currentContests && currentContests.length > 0) {
+                // 对当前筛选结果进行排序
+                currentContests.sort((a, b) => {
+                    let aValue = a[currentSort.field];
+                    let bValue = b[currentSort.field];
+
+                    // 处理日期类型
+                    if (currentSort.field === 'date' || currentSort.field === 'addedTime') {
+                        aValue = aValue ? new Date(aValue) : new Date(0);
+                        bValue = bValue ? new Date(bValue) : new Date(0);
+                    }
+
+                    // 处理数字类型
+                    if (currentSort.field === 'solved' || currentSort.field === 'totalProblems') {
+                        aValue = parseInt(aValue) || 0;
+                        bValue = parseInt(bValue) || 0;
+                    }
+
+                    // 处理字符串类型
+                    if (typeof aValue === 'string' && typeof bValue === 'string') {
+                        const result = aValue.localeCompare(bValue, 'zh-CN');
+                        return currentSort.order === 'desc' ? -result : result;
+                    }
+
+                    // 处理数字和日期类型
+                    if (aValue < bValue) return currentSort.order === 'desc' ? 1 : -1;
+                    if (aValue > bValue) return currentSort.order === 'desc' ? -1 : 1;
+                    return 0;
+                });
+            }
         }
 
         // 清空筛选

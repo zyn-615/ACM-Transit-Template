@@ -237,10 +237,47 @@ class ProblemManager {
     }
 
     /**
-     * 根据ID查找题目
+     * 根据ID查找题目 - 增强版本，支持多种查找策略
      */
     findProblemById(id) {
-        return this.problems.find(problem => problem.id === id);
+        if (!id) return null;
+        
+        // Strategy 1: Direct ID match
+        let problem = this.problems.find(p => p.id === id);
+        
+        if (!problem) {
+            // Strategy 2: Contest-generated pattern match
+            // 支持 "contestId-problemLetter" 格式
+            problem = this.problems.find(p => {
+                if (p.contestId && p.problemIndex) {
+                    const generatedId = `${p.contestId}-${p.problemIndex.toLowerCase()}`;
+                    return generatedId === id;
+                }
+                return false;
+            });
+        }
+        
+        if (!problem) {
+            // Strategy 3: Legacy ID format support
+            // 支持遗留的ID格式匹配
+            problem = this.problems.find(p => {
+                return p.id.includes(id) || id.includes(p.id);
+            });
+        }
+        
+        if (!problem) {
+            // Strategy 4: Fuzzy match for debugging
+            console.warn(`题目ID "${id}" 未找到，可用题目:`, 
+                this.problems.map(p => ({ 
+                    id: p.id, 
+                    title: p.title,
+                    contestId: p.contestId,
+                    problemIndex: p.problemIndex
+                }))
+            );
+        }
+        
+        return problem;
     }
 
     /**

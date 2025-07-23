@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>比赛横条显示测试</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/contest-board.css">
+</head>
+<body>
+    <div class="main-content">
+        <h1>ICPC风格比赛横条显示测试</h1>
+        <p>测试类似xcpcio.com的比赛面板展示功能：</p>
+        
+        <div class="card">
+            <div class="card-header">
+                <h2>功能特点</h2>
+            </div>
+            <div class="form-container">
+                <div class="alert alert-info">
+                    <h4>横条显示特点：</h4>
+                    <ul class="list-disc list-inside">
+                        <li>✅ ICPC标准横条布局 - 排名、队伍、解题数、罚时、各题状态</li>
+                        <li>✅ 颜色编码状态 - 绿色AC、红色WA、黄色评测中、灰色未尝试</li>
+                        <li>✅ 交互式单元格 - 点击编辑题目状态和罚时</li>
+                        <li>✅ 实时数据更新 - 手动录入比赛数据</li>
+                        <li>✅ 当前用户高亮 - 用户行突出显示</li>
+                        <li>✅ 筛选功能 - 仅显示AC队伍等</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 实际的比赛面板 -->
+        <div id="contest-board-container">
+            <!-- 横条显示将在这里渲染 -->
+        </div>
+        
+        <div class="card">
+            <div class="card-header">
+                <h2>使用说明</h2>
+            </div>
+            <div class="form-container">
+                <div class="instructions">
+                    <h4>如何使用比赛面板：</h4>
+                    <ol class="list-decimal list-inside">
+                        <li><strong>查看排行榜</strong> - 上方表格显示比赛排名和解题情况</li>
+                        <li><strong>编辑总体数据</strong> - 点击"编辑数据"按钮修改队伍信息</li>
+                        <li><strong>编辑题目状态</strong> - 点击任意题目单元格编辑该题状态</li>
+                        <li><strong>状态颜色说明</strong>:
+                            <ul class="list-disc list-inside ml-4">
+                                <li>🟢 绿色 - 已解决（显示解题时间和错误次数）</li>
+                                <li>🔴 红色 - 失败（显示尝试次数）</li>
+                                <li>🟡 黄色 - 评测中</li>
+                                <li>⚪ 灰色 - 未尝试</li>
+                            </ul>
+                        </li>
+                        <li><strong>筛选功能</strong> - 使用"仅显示AC"切换显示有解题的队伍</li>
+                    </ol>
+                </div>
+                
+                <div class="mt-4">
+                    <h4>测试数据说明：</h4>
+                    <p>当前面板包含3支队伍的示例数据：</p>
+                    <ul class="list-disc list-inside">
+                        <li><strong>我的队伍</strong> - 当前用户（黄色高亮）</li>
+                        <li><strong>队伍2</strong> - 示例竞争对手</li>
+                        <li><strong>队伍3</strong> - 示例竞争对手</li>
+                    </ul>
+                    <p>题目包含A、B、C、D、E五题，可以编辑每题的状态和罚时。</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header">
+                <h2>集成测试</h2>
+            </div>
+            <div class="form-container">
+                <p>比赛横条显示已集成到比赛详情页面中：</p>
+                
+                <div class="btn-group">
+                    <a href="contest-detail.html?id=cf-round-920" class="btn btn-primary">
+                        测试CF Round 920横条显示
+                    </a>
+                    <a href="contest-detail.html?id=atcoder-abc-330" class="btn btn-primary">
+                        测试ABC 330横条显示
+                    </a>
+                </div>
+                
+                <div class="mt-4">
+                    <p class="text-sm text-gray-600">
+                        在比赛详情页面中，横条显示面板位于页面底部。<br>
+                        点击"切换视图"按钮可以显示或隐藏横条面板。
+                    </p>
+                </div>
+                
+                <div class="btn-group mt-4">
+                    <a href="index.html" class="btn btn-secondary">返回仪表盘</a>
+                    <a href="test-solutions.html" class="btn btn-secondary">测试题解功能</a>
+                    <a href="test-search.html" class="btn btn-secondary">测试搜索功能</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 加载 JavaScript -->
+    <script src="js/contest-board-manager.js"></script>
+    <script>
+        // 页面加载完成后显示通知函数
+        function showNotification(message, type) {
+            console.log(`${type.toUpperCase()}: ${message}`);
+            // 简单的通知显示
+            alert(`${type.toUpperCase()}: ${message}`);
+        }
+    </script>
+</body>
+</html> 

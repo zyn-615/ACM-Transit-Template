@@ -97,6 +97,144 @@
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
+/* ICPC风格横条显示 */
+.contest-board-horizontal {
+    background: white;
+    border-radius: 8px;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.board-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9rem;
+}
+
+.board-table th,
+.board-table td {
+    padding: 0.75rem 0.5rem;
+    text-align: center;
+    border: 1px solid #e5e7eb;
+}
+
+.board-table th {
+    background: #f8f9fa;
+    font-weight: 600;
+    color: #374151;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+.board-table .rank-col { width: 80px; }
+.board-table .team-col { width: 200px; text-align: left; }
+.board-table .solved-col { width: 80px; }
+.board-table .penalty-col { width: 80px; }
+.board-table .problem-col { width: 60px; }
+
+/* 横条行样式 */
+.board-row {
+    transition: background-color 0.2s;
+}
+
+.board-row:hover {
+    background-color: #f8f9fa;
+}
+
+.board-row.user-row {
+    background-color: #fff3cd;
+    font-weight: 500;
+}
+
+.board-row.medal-gold {
+    background-color: #ffd700;
+}
+
+.board-row.medal-silver {
+    background-color: #c0c0c0;
+}
+
+.board-row.medal-bronze {
+    background-color: #cd7f32;
+}
+
+/* 题目单元格状态 */
+.problem-cell {
+    position: relative;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-weight: 500;
+}
+
+.problem-cell:hover {
+    background-color: #f3f4f6;
+    transform: scale(1.05);
+}
+
+.problem-cell.solved {
+    background-color: #10b981;
+    color: white;
+}
+
+.problem-cell.failed {
+    background-color: #ef4444;
+    color: white;
+}
+
+.problem-cell.first-solve {
+    background-color: #059669;
+    color: white;
+    position: relative;
+}
+
+.problem-cell.first-solve::after {
+    content: "🥇";
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    font-size: 0.7rem;
+}
+
+.problem-cell.unattempted {
+    background-color: #f9fafb;
+    color: #6b7280;
+}
+
+.problem-cell.pending {
+    background-color: #fbbf24;
+    color: white;
+}
+
+/* 单元格内容 */
+.cell-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 40px;
+}
+
+.cell-time {
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+.cell-attempts {
+    font-size: 0.7rem;
+    margin-top: 2px;
+    opacity: 0.8;
+}
+
+.cell-attempts::before {
+    content: "(";
+}
+
+.cell-attempts::after {
+    content: ")";
+}
+
 .board-header {
     display: flex;
     justify-content: space-between;

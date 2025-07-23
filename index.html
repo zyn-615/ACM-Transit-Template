@@ -200,24 +200,46 @@
     <script src="js/contests.js"></script>
     <script src="js/problems.js"></script>
     <script src="js/dashboard.js"></script>
+    <script src="js/search.js"></script>
     <script src="js/main.js"></script>
     
     <script>
         // 仪表板页面控制脚本 - 使用 DashboardManager
         let dashboardManager = null;
+        let globalSearch = null;
 
         // 等待应用程序初始化完成
         document.addEventListener('acm-appInitialized', function(event) {
             console.log('仪表板：应用程序初始化完成');
             initializeDashboard();
+            initializeGlobalSearch();
         });
 
         // 如果应用已经初始化，直接初始化仪表板
         setTimeout(() => {
             if (window.ACMTransit && window.ACMTransit.initialized) {
                 initializeDashboard();
+                initializeGlobalSearch();
             }
         }, 1000);
+
+        // 初始化全局搜索
+        function initializeGlobalSearch() {
+            try {
+                const app = window.ACMTransit;
+                if (!app || !app.storage) {
+                    console.log('等待存储管理器初始化...');
+                    return;
+                }
+
+                // 创建全局搜索实例
+                globalSearch = new GlobalSearchManager(app.storage);
+                console.log('全局搜索初始化完成');
+                
+            } catch (error) {
+                console.error('初始化全局搜索失败:', error);
+            }
+        }
 
         // 初始化仪表板
         function initializeDashboard() {

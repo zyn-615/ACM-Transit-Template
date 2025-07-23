@@ -1,9 +1,76 @@
 {
-  "problems": [],
+  "problems": [
+    {
+      "id": "cf-1920a",
+      "title": "Satisfying Constraints",
+      "platform": "Codeforces",
+      "difficulty": 800,
+      "tags": ["math", "implementation"],
+      "status": "solved",
+      "url": "https://codeforces.com/problem/1920/A",
+      "contestId": "cf-round-920",
+      "problemIndex": "A",
+      "notes": "简单的数学题",
+      "addedTime": "2024-01-15T20:35:00Z",
+      "solvedTime": "2024-01-15T20:45:00Z",
+      "solutions": [
+        {
+          "id": "sol-cf1920a-1",
+          "title": "官方题解",
+          "path": "./files/solutions/cf-1920a-official.md",
+          "type": "official",
+          "language": "cpp",
+          "author": "Codeforces",
+          "description": "官方发布的标准解法",
+          "addedTime": "2024-01-15T21:00:00Z",
+          "tags": ["math", "implementation"]
+        },
+        {
+          "id": "sol-cf1920a-2",
+          "title": "个人题解",
+          "path": "./files/solutions/cf-1920a-personal.md",
+          "type": "personal",
+          "language": "python",
+          "author": "张三",
+          "description": "更简洁的Python实现",
+          "addedTime": "2024-01-16T10:30:00Z",
+          "tags": ["simple"]
+        }
+      ]
+    },
+    {
+      "id": "cf-1920b",
+      "title": "Summation Game",
+      "platform": "Codeforces",
+      "difficulty": 1000,
+      "tags": ["greedy", "sorting"],
+      "status": "solved",
+      "url": "https://codeforces.com/problem/1920/B",
+      "contestId": "cf-round-920",
+      "problemIndex": "B",
+      "notes": "贪心排序",
+      "addedTime": "2024-01-15T20:50:00Z",
+      "solvedTime": "2024-01-15T21:10:00Z"
+    },
+    {
+      "id": "abc-330a",
+      "title": "Counting Passes",
+      "platform": "AtCoder",
+      "difficulty": 100,
+      "tags": ["implementation"],
+      "status": "solved",
+      "url": "https://atcoder.jp/contests/abc330/tasks/abc330_a",
+      "contestId": "atcoder-abc-330",
+      "problemIndex": "A",
+      "notes": "简单计数",
+      "addedTime": "2024-01-10T15:05:00Z",
+      "solvedTime": "2024-01-10T15:08:00Z"
+    }
+  ],
   "version": "1.0", 
   "lastModified": "2025-01-22T00:00:00.000Z",
   "metadata": {
-    "totalProblems": 0,
+    "totalProblems": 3,
     "createdBy": "ACM中转站",
     "description": "ACM题目记录数据库 - 简化版多人协作",
     "createdAt": "2025-01-22"

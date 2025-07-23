@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>题目详情 - ACM中转站</title>
     <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/solutions.css">
 </head>
 <body>
     <!-- 导航栏 -->
@@ -124,6 +125,18 @@
             </div>
         </div>
 
+        <!-- 题解管理 -->
+        <div class="card">
+            <div class="card-header">
+                <h2 class="card-title">题解管理</h2>
+            </div>
+            <div class="form-container">
+                <div id="solutions-container">
+                    <!-- 题解列表将在这里渲染 -->
+                </div>
+            </div>
+        </div>
+
         <!-- 相关操作 -->
         <div class="card">
             <div class="card-header">
@@ -143,10 +156,12 @@
     <script src="js/storage.js"></script>
     <script src="js/problems.js"></script>
     <script src="js/contests.js"></script>
+    <script src="js/solution-manager.js"></script>
+    <script src="js/search.js"></script>
     
     <script>
         // 全局变量
-        let storage, problemManager, contestManager;
+        let storage, problemManager, contestManager, globalSearch;
         let currentProblem = null;
         let problemId = null;
 
@@ -166,41 +181,108 @@
                     return;
                 }
 
+                console.log(`题目详情页面初始化开始，题目ID: ${problemId}`);
+
+                // 显示加载状态
+                document.getElementById('problem-title').textContent = '加载中...';
+                document.getElementById('problem-info').textContent = '正在获取题目信息';
+
                 // 初始化存储和管理器
                 storage = new DataStorage();
                 problemManager = new ProblemManager(storage);
                 contestManager = new ContestManager(storage);
 
-                // 等待初始化完成
+                // 初始化全局搜索
+                try {
+                    globalSearch = new GlobalSearchManager(storage);
+                    console.log('全局搜索初始化完成');
+                } catch (error) {
+                    console.error('初始化全局搜索失败:', error);
+                }
+
+                // 等待初始化完成 - 使用改进的等待机制
                 await Promise.all([
-                    new Promise(resolve => {
-                        if (problemManager.initialized) {
-                            resolve();
-                        } else {
-                            problemManager.on('initialized', resolve);
-                        }
-                    }),
-                    new Promise(resolve => {
-                        if (contestManager.initialized) {
-                            resolve();
-                        } else {
-                            contestManager.on('initialized', resolve);
-                        }
-                    })
+                    waitForManagerInitialization(problemManager),
+                    waitForManagerInitialization(contestManager)
                 ]);
 
                 // 设置事件监听器
                 setupEventListeners();
                 
-                // 加载题目数据
+                // 加载题目数据 - 使用多策略匹配
                 await loadProblemData();
                 
-                console.log('题目详情页面初始化完成');
+                console.log('题目详情页面初始化完成，题目:', currentProblem?.title || '未找到');
             } catch (error) {
                 console.error('页面初始化失败:', error);
                 showNotification('页面初始化失败: ' + error.message, 'error');
+                renderErrorState(error.message);
             }
         });
+
+        // 等待管理器初始化的改进方法
+        function waitForManagerInitialization(manager) {
+            return new Promise((resolve, reject) => {
+                if (manager.initialized) {
+                    resolve();
+                    return;
+                }
+
+                const timeout = setTimeout(() => {
+                    reject(new Error('Manager initialization timeout'));
+                }, 10000);
+
+                const onInitialized = () => {
+                    clearTimeout(timeout);
+                    manager.off('initialized', onInitialized);
+                    resolve();
+                };
+
+                manager.on('initialized', onInitialized);
+            });
+        }
+
+        // 多策略题目查找
+        function findProblemById(problemId) {
+            const problems = problemManager.problems || [];
+            
+            // Strategy 1: Direct ID match
+            let problem = problems.find(p => p.id === problemId);
+            
+            if (!problem) {
+                // Strategy 2: Contest-generated pattern match
+                problem = problems.find(p => {
+                    return p.contestId && p.problemLetter && 
+                           `${p.contestId}-${p.problemLetter.toLowerCase()}` === problemId;
+                });
+            }
+            
+            if (!problem) {
+                // Strategy 3: Partial ID match for legacy compatibility
+                problem = problems.find(p => 
+                    p.id.includes(problemId) || problemId.includes(p.id)
+                );
+            }
+            
+            if (!problem) {
+                // Strategy 4: Title-based fallback
+                problem = problems.find(p => 
+                    p.title === problemId || p.title.includes(problemId)
+                );
+            }
+            
+            if (!problem) {
+                console.warn(`Problem not found: ${problemId}`);
+                console.log('Available problems:', problems.map(p => ({ 
+                    id: p.id, 
+                    title: p.title, 
+                    contestId: p.contestId, 
+                    problemLetter: p.problemLetter 
+                })));
+            }
+            
+            return problem;
+        }
 
         // 设置事件监听器
         function setupEventListeners() {
@@ -213,17 +295,47 @@
         // 加载题目数据
         async function loadProblemData() {
             try {
-                currentProblem = problemManager.findProblemById(problemId);
+                // 使用多策略匹配查找题目
+                currentProblem = findProblemById(problemId);
                 if (!currentProblem) {
-                    showNotification('找不到指定的题目', 'error');
-                    goBack();
-                    return;
+                    throw new Error(`Problem with ID '${problemId}' not found`);
                 }
 
                 updateProblemInfo();
             } catch (error) {
                 console.error('加载题目数据失败:', error);
                 showNotification('加载数据失败: ' + error.message, 'error');
+                renderErrorState(error.message);
+            }
+        }
+
+        // 渲染错误状态
+        function renderErrorState(message) {
+            const mainContent = document.querySelector('.main-content');
+            if (mainContent) {
+                mainContent.innerHTML = `
+                    <div class="page-header">
+                        <div class="flex items-center gap-3">
+                            <button class="btn btn-outline btn-sm" onclick="goBack()">← 返回题目列表</button>
+                            <div>
+                                <h1 class="page-title">页面加载失败</h1>
+                                <p class="page-subtitle">无法初始化题目详情页面</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <div class="card-body">
+                            <div class="error-state text-center">
+                                <h3>⚠️ 题目加载失败</h3>
+                                <p class="text-gray-600 mb-4">${escapeHtml(message)}</p>
+                                <div class="btn-group">
+                                    <button onclick="location.reload()" class="btn btn-primary">重新加载</button>
+                                    <button onclick="goBack()" class="btn btn-outline">返回列表</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
             }
         }
 
@@ -332,6 +444,16 @@
                 document.getElementById('problem-solved-time-row').style.display = 'none';
             }
             document.getElementById('problem-times-section').style.display = 'block';
+
+            // 渲染题解列表
+            if (window.solutionManager) {
+                window.solutionManager.renderSolutionsList(
+                    currentProblem.solutions || [], 
+                    'solutions-container', 
+                    currentProblem.id, 
+                    false
+                );
+            }
         }
 
         // 切换题目状态

@@ -11,6 +11,8 @@ class DashboardManager {
         this.problems = [];
         this.statistics = null;
         this.initialized = false;
+        this.loading = false;
+        this.currentRequestId = 0;
         this.eventListeners = new Map();
         
         // 初始化
@@ -18,227 +20,135 @@ class DashboardManager {
     }
 
     /**
-     * 初始化仪表板管理器 - 使用Promise.all()防止竞态条件
+     * 初始化仪表板管理器 - 使用Promise.allSettled()防止竞态条件
      */
     async initialize() {
+        if (this.loading) {
+            console.log('Dashboard loading in progress, skipping duplicate request');
+            return;
+        }
+
         try {
-            console.log('仪表板管理器初始化中...');
+            this.loading = true;
+            const requestId = ++this.currentRequestId;
+            console.log(`Dashboard initialization started: request ${requestId}`);
             
-            // 关键修复：并行加载数据防止竞态条件
-            const [contests, problems] = await Promise.all([
+            // Race condition fix: Use Promise.allSettled
+            const [contestsResult, problemsResult] = await Promise.allSettled([
                 this.storage.loadContests(),
                 this.storage.loadProblems()
             ]);
             
-            // 验证并设置数据
-            this.contests = Array.isArray(contests) ? contests : [];
-            this.problems = Array.isArray(problems) ? problems : [];
+            // Abort if newer request started
+            if (requestId !== this.currentRequestId) {
+                console.log(`Request ${requestId} superseded, aborting`);
+                return;
+            }
             
-            // 计算统计信息
+            // Safe data assignment with validation
+            this.contests = contestsResult.status === 'fulfilled' && Array.isArray(contestsResult.value) 
+                ? contestsResult.value 
+                : [];
+            this.problems = problemsResult.status === 'fulfilled' && Array.isArray(problemsResult.value) 
+                ? problemsResult.value 
+                : [];
+            
+            console.log(`Data loaded: ${this.contests.length} contests, ${this.problems.length} problems`);
+            
+            // Calculate and render
             this.calculateStatistics();
-            
-            // 渲染仪表板
             this.renderDashboard();
             
             this.initialized = true;
-            console.log('仪表板管理器初始化完成', {
-                contests: this.contests.length,
-                problems: this.problems.length
-            });
+            this.loading = false;
             
-            this.emit('initialized', { 
-                contestCount: this.contests.length,
-                problemCount: this.problems.length,
-                timestamp: new Date().toISOString()
-            });
+            this.emit('initialized', this.statistics);
             
         } catch (error) {
-            console.error('仪表板初始化失败:', error);
+            console.error('Dashboard initialization failed:', error);
+            this.loading = false;
             this.renderErrorState(error.message);
-            this.initialized = false;
         }
     }
 
-    /**
-     * 计算统计信息
-     */
     calculateStatistics() {
-        // 比赛统计
-        const contestStats = this.calculateContestStats();
-        
-        // 题目统计
-        const problemStats = this.calculateProblemStats();
-        
-        // 最近活动
-        const recentActivity = this.getRecentActivity();
-        
+        const now = new Date();
+        const thisMonth = now.toISOString().substring(0, 7);
+        const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+
         this.statistics = {
-            contests: contestStats,
-            problems: problemStats,
-            recent: recentActivity,
+            totalContests: this.contests.length,
+            totalProblems: this.problems.length,
+            solvedProblems: this.problems.filter(p => p.status === 'solved').length,
+            thisMonthContests: this.contests.filter(c => 
+                c.date && c.date.substring(0, 7) === thisMonth
+            ).length,
+            thisWeekSolved: this.problems.filter(p => 
+                p.status === 'solved' && 
+                p.solvedTime && 
+                new Date(p.solvedTime) >= oneWeekAgo
+            ).length,
+            recentContests: this.getRecentContests(),
+            recentProblems: this.getRecentProblems(),
             lastUpdated: new Date().toISOString()
         };
     }
 
-    /**
-     * 计算比赛统计
-     */
-    calculateContestStats() {
-        const totalContests = this.contests.length;
-        if (totalContests === 0) {
-            return {
-                total: 0,
-                thisMonth: 0,
-                totalSolved: 0,
-                averageRank: 'N/A',
-                platforms: {}
-            };
-        }
-
-        // 本月比赛数
-        const thisMonth = new Date().toISOString().substring(0, 7);
-        const monthlyContests = this.contests.filter(contest => 
-            contest.date && contest.date.substring(0, 7) === thisMonth
-        ).length;
-
-        // 总解题数
-        const totalSolved = this.contests.reduce((sum, contest) => 
-            sum + (parseInt(contest.solved) || 0), 0
-        );
-
-        // 平台分布
-        const platforms = {};
-        this.contests.forEach(contest => {
-            platforms[contest.platform] = (platforms[contest.platform] || 0) + 1;
-        });
-
-        // 平均排名计算
-        const rankedContests = this.contests.filter(contest => 
-            contest.rank && contest.rank.includes('/')
-        );
-        
-        let averageRank = 'N/A';
-        if (rankedContests.length > 0) {
-            const avgPercentile = rankedContests.reduce((sum, contest) => {
-                try {
-                    const [rank, total] = contest.rank.split('/').map(n => parseInt(n));
-                    return sum + (rank / total);
-                } catch {
-                    return sum;
-                }
-            }, 0) / rankedContests.length;
-            
-            averageRank = Math.round(avgPercentile * 100) + '%';
-        }
-
-        return {
-            total: totalContests,
-            thisMonth: monthlyContests,
-            totalSolved: totalSolved,
-            averageRank: averageRank,
-            platforms: platforms
-        };
-    }
-
-    /**
-     * 计算题目统计
-     */
-    calculateProblemStats() {
-        const totalProblems = this.problems.length;
-        if (totalProblems === 0) {
-            return {
-                total: 0,
-                solved: 0,
-                reviewing: 0,
-                todo: 0,
-                byDifficulty: {},
-                byPlatform: {},
-                tags: {}
-            };
-        }
-
-        // 按状态统计
-        const byStatus = {
-            solved: 0,
-            review: 0,
-            todo: 0
-        };
-
-        // 按难度统计
-        const byDifficulty = {};
-        
-        // 按平台统计  
-        const byPlatform = {};
-        
-        // 标签统计
-        const tags = {};
-
-        this.problems.forEach(problem => {
-            // 状态统计
-            const status = problem.status || 'todo';
-            byStatus[status] = (byStatus[status] || 0) + 1;
-
-            // 难度统计
-            const difficulty = problem.difficulty || 'unknown';
-            byDifficulty[difficulty] = (byDifficulty[difficulty] || 0) + 1;
-
-            // 平台统计
-            const platform = problem.platform || 'unknown';
-            byPlatform[platform] = (byPlatform[platform] || 0) + 1;
-
-            // 标签统计
-            if (Array.isArray(problem.tags)) {
-                problem.tags.forEach(tag => {
-                    tags[tag] = (tags[tag] || 0) + 1;
-                });
-            }
-        });
-
-        return {
-            total: totalProblems,
-            solved: byStatus.solved || 0,
-            reviewing: byStatus.review || 0,
-            todo: byStatus.todo || 0,
-            byDifficulty: byDifficulty,
-            byPlatform: byPlatform,
-            tags: tags
-        };
-    }
-
-    /**
-     * 获取最近活动
-     */
-    getRecentActivity() {
-        const recentContests = [...this.contests]
+    getRecentContests() {
+        return [...this.contests]
             .sort((a, b) => new Date(b.date) - new Date(a.date))
             .slice(0, 5);
+    }
 
-        const recentProblems = [...this.problems]
+    getRecentProblems() {
+        return [...this.problems]
             .sort((a, b) => new Date(b.addedDate || 0) - new Date(a.addedDate || 0))
             .slice(0, 5);
-
-        return {
-            contests: recentContests,
-            problems: recentProblems
-        };
     }
 
     /**
-     * 渲染仪表板
+     * 刷新数据
      */
+    async refreshData() {
+        try {
+            console.log('刷新仪表板数据...');
+            this.initialized = false;
+            await this.initialize();
+            this.emit('dataRefreshed', { timestamp: new Date().toISOString() });
+        } catch (error) {
+            console.error('刷新数据失败:', error);
+            this.renderErrorState('刷新失败: ' + error.message);
+        }
+    }
+
     renderDashboard() {
         if (!this.statistics) {
             console.warn('统计数据未准备好');
             return;
         }
-
+        
         try {
-            this.renderOverviewCards();
-            this.renderRecentActivity();
-            this.renderCharts();
+            this.updateElement('total-contests', this.statistics.totalContests);
+            this.updateElement('total-problems', this.statistics.totalProblems);
+            this.updateElement('solved-problems', this.statistics.solvedProblems);
+            this.updateElement('this-month-contests', this.statistics.thisMonthContests);
+            this.updateElement('this-week-solved', this.statistics.thisWeekSolved);
+            
+            this.renderRecentActivities();
+            console.log('Dashboard render completed');
         } catch (error) {
-            console.error('渲染仪表板失败:', error);
-            this.renderErrorState('渲染失败: ' + error.message);
+            console.error('Dashboard render failed:', error);
+            this.renderErrorState('Render failed: ' + error.message);
+        }
+    }
+
+    updateElement(id, value) {
+        const element = document.getElementById(id);
+        if (element) {
+            element.textContent = value;
+            console.log(`Updated ${id}: ${value}`);
+        } else {
+            console.warn(`Element with id '${id}' not found`);
         }
     }
 
@@ -267,65 +177,74 @@ class DashboardManager {
         }
     }
 
-    /**
-     * 渲染最近活动
-     */
-    renderRecentActivity() {
+    renderRecentActivities() {
         this.renderRecentContests();
         this.renderRecentProblems();
-        this.renderPopularTags();
-        this.renderPlatformDistribution();
     }
 
-    /**
-     * 渲染最近比赛
-     */
     renderRecentContests() {
-        const container = document.getElementById('recent-contests-list');
-        if (!container) return;
+        const container = document.getElementById('recent-contests');
+        if (!container) {
+            console.warn('Recent contests container not found');
+            return;
+        }
 
-        const recentContests = this.statistics.recent.contests;
+        const recentContests = this.statistics.recentContests || [];
         if (recentContests.length === 0) {
-            container.innerHTML = '<p class="text-gray-500">暂无比赛记录</p>';
+            container.innerHTML = `
+                <div class="text-center text-gray-500 p-4">
+                    <p>暂无比赛记录</p>
+                    <a href="contests.html" class="btn btn-primary btn-sm mt-2">添加第一场比赛</a>
+                </div>
+            `;
             return;
         }
 
         container.innerHTML = recentContests.map(contest => `
-            <div class="recent-item">
+            <div class="recent-item p-3 border-b border-gray-200 last:border-b-0">
                 <div class="recent-title">
-                    <a href="contest-detail.html?id=${contest.id}">${this.escapeHtml(contest.name)}</a>
+                    <a href="contest-detail.html?id=${contest.id}" class="font-medium text-blue-600 hover:text-blue-800">
+                        ${this.escapeHtml(contest.name)}
+                    </a>
                 </div>
-                <div class="recent-meta">
+                <div class="recent-meta text-sm text-gray-500 mt-1">
                     <span class="tag">${this.escapeHtml(contest.platform)}</span>
                     <span class="date">${this.formatDate(contest.date)}</span>
-                    <span class="stats">${contest.solved}/${contest.totalProblems || 0}</span>
+                    <span class="stats">${contest.solved || 0}/${contest.totalProblems || 0}</span>
                 </div>
             </div>
         `).join('');
     }
 
-    /**
-     * 渲染最近题目
-     */
     renderRecentProblems() {
-        const container = document.getElementById('recent-problems-list');
-        if (!container) return;
+        const container = document.getElementById('recent-problems');
+        if (!container) {
+            console.warn('Recent problems container not found');
+            return;
+        }
 
-        const recentProblems = this.statistics.recent.problems;
+        const recentProblems = this.statistics.recentProblems || [];
         if (recentProblems.length === 0) {
-            container.innerHTML = '<p class="text-gray-500">暂无题目记录</p>';
+            container.innerHTML = `
+                <div class="text-center text-gray-500 p-4">
+                    <p>暂无题目记录</p>
+                    <a href="problems.html" class="btn btn-success btn-sm mt-2">添加第一道题目</a>
+                </div>
+            `;
             return;
         }
 
         container.innerHTML = recentProblems.map(problem => `
-            <div class="recent-item">
+            <div class="recent-item p-3 border-b border-gray-200 last:border-b-0">
                 <div class="recent-title">
-                    <a href="problem-detail.html?id=${problem.id}">${this.escapeHtml(problem.title)}</a>
+                    <a href="problem-detail.html?id=${problem.id}" class="font-medium text-blue-600 hover:text-blue-800">
+                        ${this.escapeHtml(problem.title)}
+                    </a>
                 </div>
-                <div class="recent-meta">
-                    <span class="tag">${this.escapeHtml(problem.platform)}</span>
-                    <span class="status-${problem.status}">${this.getStatusText(problem.status)}</span>
-                    ${problem.difficulty ? `<span class="difficulty">${problem.difficulty}</span>` : ''}
+                <div class="recent-meta text-sm text-gray-500 mt-1">
+                    <span class="tag bg-gray-200 px-2 py-1 rounded text-xs">${this.escapeHtml(problem.platform)}</span>
+                    <span class="status-badge status-${problem.status} ml-2">${this.getStatusText(problem.status)}</span>
+                    ${problem.difficulty ? `<span class="difficulty ml-2">难度: ${problem.difficulty}</span>` : ''}
                 </div>
             </div>
         `).join('');
@@ -377,50 +296,16 @@ class DashboardManager {
         `).join('');
     }
 
-    /**
-     * 渲染图表（简化版）
-     */
-    renderCharts() {
-        // 这里可以添加简单的图表渲染
-        // 当前保持简单，只显示基础统计
-        console.log('图表数据准备完成:', {
-            contests: this.statistics.contests,
-            problems: this.statistics.problems
-        });
-    }
-
-    /**
-     * 渲染错误状态
-     */
     renderErrorState(message) {
-        const containers = ['dashboard-overview', 'dashboard-content'];
-        
-        containers.forEach(containerId => {
-            const container = document.getElementById(containerId);
-            if (container) {
-                container.innerHTML = `
-                    <div class="error-state">
-                        <h3>加载失败</h3>
-                        <p>${this.escapeHtml(message)}</p>
-                        <button onclick="location.reload()" class="btn btn-primary">重新加载</button>
-                    </div>
-                `;
-            }
-        });
-    }
-
-    /**
-     * 刷新数据
-     */
-    async refreshData() {
-        try {
-            console.log('刷新仪表板数据...');
-            this.initialized = false;
-            await this.initialize();
-            this.emit('dataRefreshed', { timestamp: new Date().toISOString() });
-        } catch (error) {
-            console.error('刷新数据失败:', error);
-            this.renderErrorState('刷新失败: ' + error.message);
+        const statsGrid = document.querySelector('.stats-grid');
+        if (statsGrid) {
+            statsGrid.innerHTML = `
+                <div class="error-state">
+                    <h3>⚠️ 数据加载失败</h3>
+                    <p>${message}</p>
+                    <button onclick="location.reload()" class="btn btn-primary">重新加载</button>
+                </div>
+            `;
         }
     }
 

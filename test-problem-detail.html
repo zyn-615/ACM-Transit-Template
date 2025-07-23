@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>题目详情测试页面</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="main-content">
+        <h1>题目详情页面测试</h1>
+        <p>点击下面的链接测试题目详情页面是否能正确加载：</p>
+        
+        <div class="card">
+            <div class="card-header">
+                <h2>测试题目链接</h2>
+            </div>
+            <div class="form-container">
+                <div class="btn-group">
+                    <a href="problem-detail.html?id=cf-1920a" class="btn btn-primary">
+                        测试题目1: Satisfying Constraints (CF 1920A)
+                    </a>
+                    <a href="problem-detail.html?id=cf-1920b" class="btn btn-primary">
+                        测试题目2: Summation Game (CF 1920B)
+                    </a>
+                    <a href="problem-detail.html?id=abc-330a" class="btn btn-primary">
+                        测试题目3: Counting Passes (ABC 330A)
+                    </a>
+                </div>
+                
+                <hr style="margin: 2rem 0;">
+                
+                <div class="btn-group">
+                    <a href="problem-detail.html?id=nonexistent" class="btn btn-outline">
+                        测试不存在的题目ID
+                    </a>
+                    <a href="problem-detail.html" class="btn btn-outline">
+                        测试无ID参数
+                    </a>
+                </div>
+                
+                <hr style="margin: 2rem 0;">
+                
+                <div class="btn-group">
+                    <a href="problems.html" class="btn btn-secondary">返回题目管理</a>
+                    <a href="index.html" class="btn btn-secondary">返回仪表盘</a>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header">
+                <h2>当前测试数据</h2>
+            </div>
+            <div class="form-container">
+                <p>当前系统中包含以下测试题目：</p>
+                <ul>
+                    <li><strong>cf-1920a</strong>: Satisfying Constraints (Codeforces)</li>
+                    <li><strong>cf-1920b</strong>: Summation Game (Codeforces)</li>
+                    <li><strong>abc-330a</strong>: Counting Passes (AtCoder)</li>
+                </ul>
+                <p>这些题目都应该能够正常打开详情页面并显示完整信息。</p>
+            </div>
+        </div>
+    </div>
+</body>
+</html> 
