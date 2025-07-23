@@ -93,6 +93,24 @@
                             <label class="form-label" for="contest-total">题目总数</label>
                             <input type="number" id="contest-total" class="form-control" placeholder="总题数" min="0">
                         </div>
+                        <div class="form-group">
+                            <label class="form-label" for="auto-generate-count">自动生成题目</label>
+                            <select id="auto-generate-count" class="form-control">
+                                <option value="0">不生成题目</option>
+                                <option value="5">生成5题 (小型练习赛)</option>
+                                <option value="6">生成6题 (AtCoder常见)</option>
+                                <option value="7">生成7题 (Div.2常见)</option>
+                                <option value="8">生成8题</option>
+                                <option value="9">生成9题</option>
+                                <option value="10">生成10题</option>
+                                <option value="11">生成11题 (ICPC常见)</option>
+                                <option value="12">生成12题</option>
+                                <option value="13">生成13题 (ICPC World Finals)</option>
+                                <option value="14">生成14题</option>
+                                <option value="15">生成15题 (大型比赛)</option>
+                            </select>
+                            <small class="form-help">选择自动生成A-O编号的题目数量，题目将同步到题目库中</small>
+                        </div>
                     </div>
                     <div class="form-grid">
                         <div class="form-group">
@@ -234,6 +252,24 @@
                             <label class="form-label" for="edit-contest-total">题目总数</label>
                             <input type="number" id="edit-contest-total" class="form-control" min="0">
                         </div>
+                        <div class="form-group">
+                            <label class="form-label" for="edit-auto-generate-count">自动生成题目</label>
+                            <select id="edit-auto-generate-count" class="form-control">
+                                <option value="0">不生成题目</option>
+                                <option value="5">生成5题 (小型练习赛)</option>
+                                <option value="6">生成6题 (AtCoder常见)</option>
+                                <option value="7">生成7题 (Div.2常见)</option>
+                                <option value="8">生成8题</option>
+                                <option value="9">生成9题</option>
+                                <option value="10">生成10题</option>
+                                <option value="11">生成11题 (ICPC常见)</option>
+                                <option value="12">生成12题</option>
+                                <option value="13">生成13题 (ICPC World Finals)</option>
+                                <option value="14">生成14题</option>
+                                <option value="15">生成15题 (大型比赛)</option>
+                            </select>
+                            <small class="form-help">编辑时生成题目将追加到现有题目中</small>
+                        </div>
                     </div>
                     <div class="form-grid">
                         <div class="form-group">
@@ -266,6 +302,7 @@
 
     <!-- 加载 JavaScript -->
     <script src="js/storage.js"></script>
+    <script src="js/contest-generator.js"></script>
     <script src="js/contests.js"></script>
     
     <script>
@@ -449,7 +486,8 @@
                     url: document.getElementById('contest-url').value,
                     pdfPath: document.getElementById('contest-pdf').value,
                     summaryPath: document.getElementById('contest-summary').value,
-                    notes: document.getElementById('contest-notes').value
+                    notes: document.getElementById('contest-notes').value,
+                    autoGenerateCount: document.getElementById('auto-generate-count').value
                 };
 
                 contestManager.addContest(formData);
@@ -569,7 +607,8 @@
                     url: document.getElementById('edit-contest-url').value,
                     pdfPath: document.getElementById('edit-contest-pdf').value,
                     summaryPath: document.getElementById('edit-contest-summary').value,
-                    notes: document.getElementById('edit-contest-notes').value
+                    notes: document.getElementById('edit-contest-notes').value,
+                    autoGenerateCount: document.getElementById('edit-auto-generate-count').value
                 };
 
                 contestManager.updateContest(id, updates);

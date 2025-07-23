@@ -10,6 +10,9 @@ class ContestManager {
         this.eventListeners = new Map();
         this.initialized = false;
         
+        // 初始化题目生成器
+        this.contestGenerator = new ContestGenerator(storage);
+        
         // 初始化
         this.initialize();
     }
@@ -39,9 +42,9 @@ class ContestManager {
     }
 
     /**
-     * 添加比赛记录 - 简化版
+     * 添加比赛记录 - 集成自动题目生成
      */
-    addContest(contestData) {
+    async addContest(contestData) {
         try {
             // 验证必要字段
             if (!contestData.name || !contestData.date) {
@@ -59,7 +62,7 @@ class ContestManager {
                 throw new Error(`比赛 "${contestData.name}" 已存在`);
             }
 
-            // 创建新比赛对象 - 简化版
+            // 创建新比赛对象
             const newContest = {
                 id: this.generateId(),
                 name: contestData.name.trim(),
@@ -79,13 +82,64 @@ class ContestManager {
                 notes: contestData.notes?.trim() || '',
                 addedTime: new Date().toISOString(),
                 
-                // 比赛题目列表 (A, B, C, ...)
+                // 生成的题目列表（如果有自动生成）
+                generatedProblems: [],
+                
+                // 保留原有的内部题目结构
                 problems: this.generateProblemsList(parseInt(contestData.totalProblems) || 0)
             };
 
             // 验证排名格式（如果提供）
             if (newContest.rank && !this.validateRankFormat(newContest.rank)) {
                 throw new Error('排名格式不正确，请使用 "排名/总人数" 格式，如: "100/2000"');
+            }
+
+            // 处理自动题目生成
+            const autoGenerateCount = parseInt(contestData.autoGenerateCount) || 0;
+            if (autoGenerateCount > 0) {
+                console.log(`开始为比赛 "${newContest.name}" 自动生成 ${autoGenerateCount} 道题目`);
+                
+                try {
+                    // 使用题目生成器生成题目
+                    const generatedProblems = await this.contestGenerator.generateProblemsForContest(
+                        newContest, 
+                        autoGenerateCount
+                    );
+                    
+                    // 记录生成的题目ID
+                    newContest.generatedProblems = generatedProblems.map(p => p.id);
+                    
+                    // 如果用户没有手动设置总题数，使用生成的题目数量
+                    if (!newContest.totalProblems) {
+                        newContest.totalProblems = autoGenerateCount;
+                        // 更新内部题目结构
+                        newContest.problems = this.generateProblemsList(autoGenerateCount);
+                    }
+                    
+                    // 添加生成信息到备注
+                    const generationNote = `已自动生成 ${autoGenerateCount} 道题目 (${generatedProblems.map(p => p.problemLetter).join(', ')})`;
+                    newContest.notes = newContest.notes ? 
+                        `${newContest.notes}\n${generationNote}` : 
+                        generationNote;
+                    
+                    console.log(`成功生成题目:`, generatedProblems.map(p => `${p.problemLetter}: ${p.title}`));
+                    
+                } catch (generationError) {
+                    console.error('自动生成题目失败:', generationError);
+                    
+                    // 题目生成失败不应该阻止比赛创建，只需要警告用户
+                    const warningNote = `题目自动生成失败: ${generationError.message}`;
+                    newContest.notes = newContest.notes ? 
+                        `${newContest.notes}\n${warningNote}` : 
+                        warningNote;
+                    
+                    // 触发警告事件
+                    this.emit('problemGenerationFailed', { 
+                        contest: newContest, 
+                        error: generationError.message,
+                        attemptedCount: autoGenerateCount
+                    });
+                }
             }
 
             // 添加到比赛列表
@@ -95,7 +149,10 @@ class ContestManager {
             this.saveData();
             
             // 触发事件
-            this.emit('contestAdded', { contest: newContest });
+            this.emit('contestAdded', { 
+                contest: newContest,
+                generatedProblemsCount: newContest.generatedProblems.length
+            });
             
             console.log('比赛添加成功:', newContest.name);
             return newContest.id;
@@ -127,9 +184,9 @@ class ContestManager {
     }
 
     /**
-     * 更新比赛记录
+     * 更新比赛记录 - 支持自动题目生成
      */
-    updateContest(id, updates) {
+    async updateContest(id, updates) {
         try {
             const contestIndex = this.contests.findIndex(contest => contest.id === id);
             if (contestIndex === -1) {
@@ -170,6 +227,64 @@ class ContestManager {
                 }
             }
 
+            // 处理自动题目生成（编辑时）
+            const autoGenerateCount = parseInt(updates.autoGenerateCount) || 0;
+            if (autoGenerateCount > 0) {
+                console.log(`开始为比赛 "${originalContest.name}" 追加生成 ${autoGenerateCount} 道题目`);
+                
+                try {
+                    // 创建临时比赛数据用于生成
+                    const contestForGeneration = {
+                        ...originalContest,
+                        ...updates,
+                        id: originalContest.id
+                    };
+                    
+                    // 使用题目生成器生成题目
+                    const generatedProblems = await this.contestGenerator.generateProblemsForContest(
+                        contestForGeneration, 
+                        autoGenerateCount
+                    );
+                    
+                    // 合并生成的题目ID到现有列表
+                    const existingGeneratedProblems = originalContest.generatedProblems || [];
+                    updates.generatedProblems = [
+                        ...existingGeneratedProblems,
+                        ...generatedProblems.map(p => p.id)
+                    ];
+                    
+                    // 添加生成信息到备注
+                    const generationNote = `追加生成 ${autoGenerateCount} 道题目 (${generatedProblems.map(p => p.problemLetter).join(', ')})`;
+                    const existingNotes = updates.notes !== undefined ? updates.notes : originalContest.notes;
+                    updates.notes = existingNotes ? 
+                        `${existingNotes}\n${generationNote}` : 
+                        generationNote;
+                    
+                    console.log(`成功追加生成题目:`, generatedProblems.map(p => `${p.problemLetter}: ${p.title}`));
+                    
+                } catch (generationError) {
+                    console.error('追加生成题目失败:', generationError);
+                    
+                    // 题目生成失败不应该阻止比赛更新，只需要警告用户
+                    const warningNote = `追加生成题目失败: ${generationError.message}`;
+                    const existingNotes = updates.notes !== undefined ? updates.notes : originalContest.notes;
+                    updates.notes = existingNotes ? 
+                        `${existingNotes}\n${warningNote}` : 
+                        warningNote;
+                    
+                    // 触发警告事件
+                    this.emit('problemGenerationFailed', { 
+                        contest: originalContest, 
+                        error: generationError.message,
+                        attemptedCount: autoGenerateCount,
+                        isUpdate: true
+                    });
+                }
+            }
+
+            // 移除autoGenerateCount，避免存储到比赛数据中
+            delete updates.autoGenerateCount;
+
             // 更新比赛信息
             this.contests[contestIndex] = {
                 ...this.contests[contestIndex],
@@ -185,7 +300,8 @@ class ContestManager {
             // 触发事件
             this.emit('contestUpdated', { 
                 contest: this.contests[contestIndex], 
-                originalContest: originalContest 
+                originalContest: originalContest,
+                additionalProblemsGenerated: autoGenerateCount > 0 ? autoGenerateCount : 0
             });
 
             console.log('比赛更新成功:', this.contests[contestIndex].name);
@@ -619,5 +735,11 @@ ${contest.notes || '无'}
         this.contests = [];
         this.eventListeners.clear();
         this.initialized = false;
+        
+        // 清理题目生成器
+        if (this.contestGenerator) {
+            this.contestGenerator.destroy();
+            this.contestGenerator = null;
+        }
     }
 }

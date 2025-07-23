@@ -1,0 +1,572 @@
+/**
+ * ACM中转站 - 比赛详情面板样式
+ * 专用于比赛详情页面的题目网格和状态显示
+ * 提供类似xcpcio.com的简洁比赛面板样式
+ */
+
+/* 比赛详情容器 */
+.contest-detail-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 1rem;
+}
+
+/* 比赛头部信息 */
+.contest-header {
+    background: white;
+    border-radius: 8px;
+    padding: 2rem;
+    margin-bottom: 2rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.contest-title {
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: #333;
+    margin-bottom: 1rem;
+    text-align: center;
+}
+
+.contest-meta {
+    display: flex;
+    justify-content: center;
+    gap: 2rem;
+    flex-wrap: wrap;
+    margin-bottom: 1rem;
+}
+
+.contest-platform {
+    background: #007bff;
+    color: white;
+    padding: 0.25rem 0.75rem;
+    border-radius: 4px;
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+.contest-date {
+    color: #666;
+    font-weight: 500;
+}
+
+.contest-link {
+    color: #007bff;
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.contest-link:hover {
+    text-decoration: underline;
+}
+
+/* 比赛统计信息 */
+.contest-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 1.5rem;
+    margin-top: 1.5rem;
+}
+
+.stat-item {
+    text-align: center;
+    padding: 1rem;
+    background: #f8f9fa;
+    border-radius: 8px;
+}
+
+.stat-value {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #007bff;
+    margin-bottom: 0.5rem;
+}
+
+.stat-label {
+    font-size: 0.9rem;
+    color: #666;
+    font-weight: 500;
+}
+
+/* 题目面板 */
+.problems-board {
+    background: white;
+    border-radius: 8px;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.board-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 2px solid #e9ecef;
+}
+
+.board-header h3 {
+    font-size: 1.3rem;
+    font-weight: 600;
+    color: #333;
+    margin: 0;
+}
+
+.board-actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+/* 题目网格 */
+.problems-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 1rem;
+}
+
+/* 题目卡片 */
+.problem-card {
+    border: 2px solid #e9ecef;
+    border-radius: 8px;
+    padding: 1rem;
+    background: white;
+    transition: all 0.2s ease;
+    position: relative;
+}
+
+.problem-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+/* 题目状态样式 */
+.problem-card.status-ac {
+    border-color: #28a745;
+    background: linear-gradient(135deg, #d4edda 0%, #ffffff 100%);
+}
+
+.problem-card.status-wa {
+    border-color: #dc3545;
+    background: linear-gradient(135deg, #f8d7da 0%, #ffffff 100%);
+}
+
+.problem-card.status-unattempted {
+    border-color: #6c757d;
+    background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+}
+
+/* 题目头部 */
+.problem-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.75rem;
+}
+
+.problem-letter {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #333;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #f8f9fa;
+}
+
+.status-ac .problem-letter {
+    background: #28a745;
+    color: white;
+}
+
+.status-wa .problem-letter {
+    background: #dc3545;
+    color: white;
+}
+
+.status-unattempted .problem-letter {
+    background: #6c757d;
+    color: white;
+}
+
+.problem-status {
+    font-size: 0.8rem;
+    font-weight: 500;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    text-transform: uppercase;
+}
+
+.status-ac .problem-status {
+    background: #28a745;
+    color: white;
+}
+
+.status-wa .problem-status {
+    background: #dc3545;
+    color: white;
+}
+
+.status-unattempted .problem-status {
+    background: #6c757d;
+    color: white;
+}
+
+/* 题目标题 */
+.problem-title {
+    font-weight: 600;
+    margin-bottom: 0.75rem;
+    line-height: 1.4;
+}
+
+.problem-title a {
+    color: #333;
+    text-decoration: none;
+}
+
+.problem-title a:hover {
+    color: #007bff;
+    text-decoration: underline;
+}
+
+/* 题目统计信息 */
+.problem-stats {
+    margin-bottom: 1rem;
+}
+
+.stat-row {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 0.25rem;
+    font-size: 0.9rem;
+}
+
+.stat-row span:first-child {
+    color: #666;
+}
+
+.stat-row span:last-child {
+    font-weight: 500;
+    color: #333;
+}
+
+/* 题目操作按钮 */
+.problem-actions {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+}
+
+/* 题目备注 */
+.problem-notes {
+    font-size: 0.85rem;
+    color: #666;
+    background: #f8f9fa;
+    padding: 0.5rem;
+    border-radius: 4px;
+    border-left: 3px solid #007bff;
+    margin-top: 0.5rem;
+}
+
+/* 空面板状态 */
+.empty-board {
+    text-align: center;
+    padding: 3rem 1rem;
+    color: #666;
+}
+
+.empty-board p {
+    font-size: 1.1rem;
+    margin-bottom: 1.5rem;
+}
+
+/* 比赛总结 */
+.contest-summary {
+    background: white;
+    border-radius: 8px;
+    padding: 1.5rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.summary-section {
+    margin-bottom: 1.5rem;
+}
+
+.summary-section:last-child {
+    margin-bottom: 0;
+}
+
+.summary-section h4 {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 1rem;
+    border-bottom: 1px solid #e9ecef;
+    padding-bottom: 0.5rem;
+}
+
+/* 状态统计 */
+.status-stats {
+    display: flex;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+}
+
+.status-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: 500;
+}
+
+.status-indicator {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+}
+
+.status-indicator.status-ac {
+    background: #28a745;
+}
+
+.status-indicator.status-wa {
+    background: #dc3545;
+}
+
+.status-indicator.status-unattempted {
+    background: #6c757d;
+}
+
+/* 时间分析 */
+.time-analysis p {
+    margin-bottom: 0.5rem;
+    color: #666;
+}
+
+/* 比赛备注 */
+.contest-notes {
+    background: #f8f9fa;
+    padding: 1rem;
+    border-radius: 4px;
+    border-left: 4px solid #007bff;
+    color: #666;
+    line-height: 1.5;
+}
+
+/* 编辑模态框样式 */
+.problem-edit-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s ease;
+}
+
+.problem-edit-modal.show {
+    opacity: 1;
+    visibility: visible;
+}
+
+.problem-edit-content {
+    background: white;
+    border-radius: 8px;
+    padding: 2rem;
+    width: 90%;
+    max-width: 500px;
+    max-height: 80vh;
+    overflow-y: auto;
+    transform: scale(0.9);
+    transition: transform 0.3s ease;
+}
+
+.problem-edit-modal.show .problem-edit-content {
+    transform: scale(1);
+}
+
+.problem-edit-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.problem-edit-title {
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: #333;
+    margin: 0;
+}
+
+.problem-edit-close {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    color: #666;
+    cursor: pointer;
+    padding: 0;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+}
+
+.problem-edit-close:hover {
+    background: #f8f9fa;
+    color: #333;
+}
+
+/* 错误状态 */
+.error-state {
+    text-align: center;
+    padding: 3rem 1rem;
+    color: #666;
+}
+
+.error-state h3 {
+    color: #dc3545;
+    margin-bottom: 1rem;
+}
+
+.error-state p {
+    margin-bottom: 1.5rem;
+}
+
+.error-actions {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+    .contest-detail-container {
+        padding: 0.5rem;
+    }
+    
+    .contest-header {
+        padding: 1.5rem 1rem;
+    }
+    
+    .contest-title {
+        font-size: 1.4rem;
+    }
+    
+    .contest-meta {
+        gap: 1rem;
+    }
+    
+    .contest-stats {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 1rem;
+    }
+    
+    .problems-grid {
+        grid-template-columns: 1fr;
+        gap: 0.75rem;
+    }
+    
+    .problem-card {
+        padding: 0.75rem;
+    }
+    
+    .board-header {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 1rem;
+    }
+    
+    .board-actions {
+        justify-content: center;
+    }
+    
+    .status-stats {
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+    
+    .problem-edit-content {
+        padding: 1.5rem;
+        margin: 1rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .contest-stats {
+        grid-template-columns: 1fr;
+    }
+    
+    .problem-actions {
+        flex-direction: column;
+    }
+    
+    .error-actions {
+        flex-direction: column;
+        align-items: center;
+    }
+}
+
+/* 打印样式 */
+@media print {
+    .board-actions,
+    .problem-actions,
+    .error-actions {
+        display: none;
+    }
+    
+    .problem-card {
+        break-inside: avoid;
+        border: 1px solid #ddd !important;
+        box-shadow: none !important;
+        margin-bottom: 1rem;
+    }
+    
+    .contest-detail-container {
+        max-width: none;
+        padding: 0;
+    }
+}
+
+/* 深色模式支持（可选） */
+@media (prefers-color-scheme: dark) {
+    .contest-header,
+    .problems-board,
+    .contest-summary {
+        background: #2d3748;
+        color: #e2e8f0;
+    }
+    
+    .contest-title {
+        color: #e2e8f0;
+    }
+    
+    .problem-card {
+        background: #4a5568;
+        border-color: #718096;
+        color: #e2e8f0;
+    }
+    
+    .problem-title a {
+        color: #e2e8f0;
+    }
+    
+    .problem-edit-content {
+        background: #2d3748;
+        color: #e2e8f0;
+    }
+}

@@ -66,8 +66,13 @@ class MainApp {
         const path = window.location.pathname;
         const filename = path.substring(path.lastIndexOf('/') + 1) || 'index.html';
         
+        // 检测比赛详情页面
+        if (filename.includes('contest-detail')) return 'contest-detail';
+        // 检测比赛管理页面
         if (filename.includes('contest')) return 'contests';
+        // 检测题目管理页面
         if (filename.includes('problem')) return 'problems';
+        // 默认为仪表板页面
         return 'dashboard';
     }
 
@@ -90,14 +95,16 @@ class MainApp {
                 console.log('题目管理器初始化完成');
                 break;
                 
+            case 'contest-detail':
+                // 比赛详情页面需要比赛详情管理器
+                // 注意：ContestDetailManager在页面脚本中直接初始化，这里不需要处理
+                console.log('比赛详情页面检测到，管理器将在页面脚本中初始化');
+                break;
+                
             case 'dashboard':
-                // 仪表板需要两个管理器来获取统计信息
-                this.contestManager = new ContestManager(this.storage);
-                this.problemManager = new ProblemManager(this.storage);
-                await Promise.all([
-                    this.waitForManagerInitialization(this.contestManager, 'Contest Manager'),
-                    this.waitForManagerInitialization(this.problemManager, 'Problem Manager')
-                ]);
+                // 仪表板使用专用管理器解决数据加载竞态条件
+                this.dashboardManager = new DashboardManager(this.storage);
+                await this.waitForManagerInitialization(this.dashboardManager, 'Dashboard Manager');
                 console.log('仪表板管理器初始化完成');
                 break;
                 
@@ -188,6 +195,7 @@ class MainApp {
             // 根据当前页面设置活动状态
             if ((this.currentPage === 'dashboard' && href.includes('index.html')) ||
                 (this.currentPage === 'contests' && href.includes('contests.html')) ||
+                (this.currentPage === 'contest-detail' && href.includes('contests.html')) ||
                 (this.currentPage === 'problems' && href.includes('problems.html'))) {
                 link.classList.add('active');
             }
@@ -352,16 +360,29 @@ class MainApp {
             lastUpdated: new Date().toISOString()
         };
 
-        if (this.contestManager) {
-            const contestStats = this.contestManager.getStatistics();
-            stats.contests.total = contestStats.total;
-            stats.contests.thisMonth = contestStats.recentContests?.length || 0;
-        }
+        // 优先使用DashboardManager的统计数据
+        if (this.dashboardManager && this.dashboardManager.initialized) {
+            const dashboardStats = this.dashboardManager.getStatistics();
+            if (dashboardStats) {
+                stats.contests.total = dashboardStats.contests.total;
+                stats.contests.thisMonth = dashboardStats.contests.thisMonth;
+                stats.problems.total = dashboardStats.problems.total;
+                stats.problems.solved = dashboardStats.problems.solved;
+                stats.lastUpdated = dashboardStats.lastUpdated;
+            }
+        } else {
+            // 降级处理：分别从管理器获取数据
+            if (this.contestManager) {
+                const contestStats = this.contestManager.getStatistics();
+                stats.contests.total = contestStats.total;
+                stats.contests.thisMonth = contestStats.recentContests?.length || 0;
+            }
 
-        if (this.problemManager) {
-            const problemStats = this.problemManager.getStatistics();
-            stats.problems.total = problemStats.total;
-            stats.problems.solved = problemStats.byStatus.solved || 0;
+            if (this.problemManager) {
+                const problemStats = this.problemManager.getStatistics();
+                stats.problems.total = problemStats.total;
+                stats.problems.solved = problemStats.byStatus.solved || 0;
+            }
         }
 
         return stats;
@@ -381,6 +402,9 @@ class MainApp {
             }
             if (this.problemManager) {
                 promises.push(this.problemManager.reloadData());
+            }
+            if (this.dashboardManager) {
+                promises.push(this.dashboardManager.refreshData());
             }
 
             await Promise.all(promises);
@@ -413,6 +437,9 @@ class MainApp {
             }
             if (this.problemManager) {
                 this.problemManager.clearAllProblems();
+            }
+            if (this.dashboardManager) {
+                this.dashboardManager.refreshData();
             }
 
             this.showGlobalMessage('应用程序已重置', 'success');
@@ -499,7 +526,8 @@ class MainApp {
             managers: {
                 storage: !!this.storage,
                 contests: !!this.contestManager,
-                problems: !!this.problemManager
+                problems: !!this.problemManager,
+                dashboard: !!this.dashboardManager
             },
             features: {
                 localStorage: typeof Storage !== 'undefined',
@@ -525,11 +553,15 @@ class MainApp {
         if (this.problemManager) {
             this.problemManager.destroy();
         }
+        if (this.dashboardManager) {
+            this.dashboardManager.destroy();
+        }
 
         // 重置状态
         this.storage = null;
         this.contestManager = null;
         this.problemManager = null;
+        this.dashboardManager = null;
         this.initialized = false;
         
         console.log('ACM中转站应用程序已清理');
