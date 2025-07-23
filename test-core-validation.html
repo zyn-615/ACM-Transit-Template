@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ACM中转站 - 核心验证测试</title>
+    <style>
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+            background: #f5f5f5;
+        }
+        
+        .test-container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+        
+        .test-header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #eee;
+        }
+        
+        .test-header h1 {
+            color: #333;
+            margin: 0;
+        }
+        
+        .test-buttons {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+        
+        .test-btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+        
+        .test-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+        
+        .btn-primary { background: #2196f3; color: white; }
+        .btn-success { background: #4caf50; color: white; }
+        .btn-warning { background: #ff9800; color: white; }
+        .btn-info { background: #00bcd4; color: white; }
+        
+        .console-output {
+            background: #1e1e1e;
+            color: #f0f0f0;
+            padding: 20px;
+            border-radius: 6px;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 13px;
+            line-height: 1.4;
+            max-height: 600px;
+            overflow-y: auto;
+            margin-top: 20px;
+            white-space: pre-wrap;
+        }
+        
+        .console-output:empty::before {
+            content: '点击上方按钮开始测试...';
+            color: #888;
+            font-style: italic;
+        }
+        
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        
+        .status-success { background: #4caf50; }
+        .status-error { background: #f44336; }
+        .status-warning { background: #ff9800; }
+        .status-info { background: #2196f3; }
+        
+        @media (max-width: 768px) {
+            .test-buttons {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .test-btn {
+                width: 100%;
+                max-width: 300px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <div class="test-header">
+            <h1>🧪 ACM中转站核心验证测试</h1>
+            <p>文件存储系统重构 - 基础设施验证</p>
+        </div>
+        
+        <div class="test-buttons">
+            <button class="test-btn btn-primary" onclick="runTest('core')">
+                Gate 1: 核心基础设施
+            </button>
+            <button class="test-btn btn-warning" onclick="runTest('data')">
+                Gate 2: 数据结构
+            </button>
+            <button class="test-btn btn-info" onclick="runTest('performance')">
+                Gate 3: 性能兼容性
+            </button>
+            <button class="test-btn btn-success" onclick="runTest('all')">
+                🚀 运行全部测试
+            </button>
+        </div>
+        
+        <div id="console" class="console-output"></div>
+    </div>
+
+    <!-- 加载依赖的脚本 -->
+    <script src="./js/new-file-manager.js"></script>
+    <script src="./js/core-validation-tests.js"></script>
+    
+    <script>
+        // 重写console.log以显示在页面上
+        const originalConsoleLog = console.log;
+        const consoleElement = document.getElementById('console');
+        
+        console.log = function(...args) {
+            // 调用原始console.log
+            originalConsoleLog.apply(console, args);
+            
+            // 显示在页面上
+            const message = args.map(arg => 
+                typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)
+            ).join(' ');
+            
+            consoleElement.textContent += message + '\n';
+            consoleElement.scrollTop = consoleElement.scrollHeight;
+        };
+        
+        // 清空控制台
+        function clearConsole() {
+            consoleElement.textContent = '';
+        }
+        
+        // 运行测试
+        async function runTest(type) {
+            clearConsole();
+            
+            try {
+                switch (type) {
+                    case 'core':
+                        await validateCoreInfrastructure();
+                        break;
+                    case 'data':
+                        await validateDataStructures();
+                        break;
+                    case 'performance':
+                        await validatePerformanceAndCompatibility();
+                        break;
+                    case 'all':
+                        await runAllCoreValidation();
+                        break;
+                    default:
+                        console.log('未知的测试类型');
+                }
+            } catch (error) {
+                console.log('测试执行出错:', error.message);
+                console.log('错误详情:', error);
+            }
+        }
+        
+        // 页面加载完成后的初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🎯 ACM中转站核心验证测试系统已准备就绪');
+            console.log('👆 请点击上方按钮开始测试');
+            console.log('');
+            
+            // 检查依赖是否加载成功
+            if (typeof NewFileManager !== 'undefined') {
+                console.log('✅ NewFileManager 类已加载');
+            } else {
+                console.log('❌ NewFileManager 类未加载，请检查文件路径');
+            }
+            
+            if (typeof validateCoreInfrastructure !== 'undefined') {
+                console.log('✅ 验证测试函数已加载');
+            } else {
+                console.log('❌ 验证测试函数未加载，请检查文件路径');
+            }
+            
+            console.log('');
+        });
+        
+        // 添加键盘快捷键
+        document.addEventListener('keydown', function(e) {
+            if (e.ctrlKey || e.metaKey) {
+                switch (e.key) {
+                    case '1':
+                        e.preventDefault();
+                        runTest('core');
+                        break;
+                    case '2':
+                        e.preventDefault();
+                        runTest('data');
+                        break;
+                    case '3':
+                        e.preventDefault();
+                        runTest('performance');
+                        break;
+                    case 'a':
+                        e.preventDefault();
+                        runTest('all');
+                        break;
+                    case 'c':
+                        e.preventDefault();
+                        clearConsole();
+                        break;
+                }
+            }
+        });
+    </script>
+</body>
+</html>

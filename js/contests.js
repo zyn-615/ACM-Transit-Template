@@ -13,6 +13,9 @@ class ContestManager {
         // 初始化题目生成器
         this.contestGenerator = new ContestGenerator(storage);
         
+        // 初始化新文件管理器
+        this.fileManager = new NewFileManager();
+        
         // 初始化
         this.initialize();
     }
@@ -70,7 +73,7 @@ class ContestManager {
                 date: contestData.date,
                 url: contestData.url?.trim() || '',
                 
-                // 使用相对路径
+                // 使用相对路径（向后兼容）
                 pdfPath: this.normalizeRelativePath(contestData.pdfPath?.trim() || ''),
                 summaryPath: this.normalizeRelativePath(contestData.summaryPath?.trim() || ''),
                 
@@ -87,6 +90,28 @@ class ContestManager {
                 
                 // 保留原有的内部题目结构
                 problems: this.generateProblemsList(parseInt(contestData.totalProblems) || 0)
+            };
+
+            // 生成新的文件结构
+            const fileStructure = this.fileManager.createContestStructure(newContest.id);
+            
+            // 扩展比赛数据结构以支持新文件架构
+            newContest.files = {
+                statement: {
+                    path: fileStructure.statement,
+                    status: 'pending',
+                    uploadTime: null
+                },
+                solution: {
+                    path: fileStructure.solution,
+                    status: 'pending', 
+                    uploadTime: null
+                },
+                summary: {
+                    path: fileStructure.summary,
+                    status: 'pending',
+                    uploadTime: null
+                }
             };
 
             // 验证排名格式（如果提供）
@@ -147,6 +172,9 @@ class ContestManager {
             
             // 保存数据
             this.saveData();
+            
+            // 显示文件上传指导
+            this.showFileUploadGuidance(newContest.id, fileStructure);
             
             // 触发事件
             this.emit('contestAdded', { 
@@ -595,6 +623,161 @@ ${contest.notes || '无'}
 ---
 *总结创建时间: ${new Date().toLocaleString('zh-CN')}*
 `;
+    }
+
+    /**
+     * 显示文件上传指导界面
+     * @param {string} contestId - 比赛ID
+     * @param {Object} fileStructure - 文件结构对象
+     */
+    showFileUploadGuidance(contestId, fileStructure) {
+        // 创建模态框
+        const modal = document.createElement('div');
+        modal.className = 'file-guidance-modal';
+        modal.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 10000;
+        `;
+        
+        modal.innerHTML = `
+            <div class="modal-content" style="
+                background: white;
+                padding: 30px;
+                border-radius: 10px;
+                max-width: 600px;
+                width: 90%;
+                max-height: 80vh;
+                overflow-y: auto;
+                box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+                font-family: system-ui, -apple-system, sans-serif;
+            ">
+                <h3 style="margin: 0 0 20px 0; color: #333; display: flex; align-items: center;">
+                    📁 比赛文件夹已创建
+                </h3>
+                <p style="margin: 0 0 20px 0; color: #666;">
+                    比赛 ID: <strong style="color: #2196f3;">${contestId}</strong>
+                </p>
+                <div class="file-paths">
+                    <h4 style="margin: 0 0 15px 0; color: #333;">请手动复制文件到以下位置:</h4>
+                    <div class="path-item" style="margin-bottom: 15px; padding: 15px; background: #f8f9fa; border-radius: 6px; border-left: 4px solid #4caf50;">
+                        <strong style="color: #333;">比赛题面 (contest.pdf):</strong><br>
+                        <code style="background: #fff; padding: 5px 8px; border-radius: 3px; font-size: 12px; color: #e91e63; word-break: break-all; display: block; margin-top: 5px;">
+                            ${fileStructure.statement}
+                        </code>
+                        <button onclick="navigator.clipboard.writeText('${fileStructure.statement}')" style="
+                            margin-top: 8px;
+                            padding: 4px 8px;
+                            background: #4caf50;
+                            color: white;
+                            border: none;
+                            border-radius: 3px;
+                            cursor: pointer;
+                            font-size: 12px;
+                        ">复制路径</button>
+                    </div>
+                    <div class="path-item" style="margin-bottom: 15px; padding: 15px; background: #f8f9fa; border-radius: 6px; border-left: 4px solid #2196f3;">
+                        <strong style="color: #333;">官方题解 (editorial.pdf):</strong><br>
+                        <code style="background: #fff; padding: 5px 8px; border-radius: 3px; font-size: 12px; color: #e91e63; word-break: break-all; display: block; margin-top: 5px;">
+                            ${fileStructure.solution}
+                        </code>
+                        <button onclick="navigator.clipboard.writeText('${fileStructure.solution}')" style="
+                            margin-top: 8px;
+                            padding: 4px 8px;
+                            background: #2196f3;
+                            color: white;
+                            border: none;
+                            border-radius: 3px;
+                            cursor: pointer;
+                            font-size: 12px;
+                        ">复制路径</button>
+                    </div>
+                    <div class="path-item" style="margin-bottom: 15px; padding: 15px; background: #f8f9fa; border-radius: 6px; border-left: 4px solid #ff9800;">
+                        <strong style="color: #333;">比赛总结 (review.pdf):</strong><br>
+                        <code style="background: #fff; padding: 5px 8px; border-radius: 3px; font-size: 12px; color: #e91e63; word-break: break-all; display: block; margin-top: 5px;">
+                            ${fileStructure.summary}
+                        </code>
+                        <button onclick="navigator.clipboard.writeText('${fileStructure.summary}')" style="
+                            margin-top: 8px;
+                            padding: 4px 8px;
+                            background: #ff9800;
+                            color: white;
+                            border: none;
+                            border-radius: 3px;
+                            cursor: pointer;
+                            font-size: 12px;
+                        ">复制路径</button>
+                    </div>
+                    <div style="padding: 15px; background: #e3f2fd; border-radius: 6px; margin-top: 15px;">
+                        <h5 style="margin: 0 0 10px 0; color: #1976d2;">💡 使用提示:</h5>
+                        <ul style="margin: 0; padding-left: 20px; color: #555; font-size: 14px;">
+                            <li>如果文件夹不存在，请先手动创建文件夹</li>
+                            <li>每个文件夹只能放一个文件，便于管理</li>
+                            <li>建议使用相对路径以支持多人协作</li>
+                        </ul>
+                    </div>
+                </div>
+                <div style="text-align: center; margin-top: 20px;">
+                    <button onclick="this.parentElement.parentElement.remove()" style="
+                        padding: 10px 20px;
+                        background: #2196f3;
+                        color: white;
+                        border: none;
+                        border-radius: 5px;
+                        cursor: pointer;
+                        font-size: 14px;
+                    ">了解，关闭指导</button>
+                </div>
+            </div>
+        `;
+        
+        // 添加到页面并处理点击关闭
+        document.body.appendChild(modal);
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                modal.remove();
+            }
+        });
+    }
+
+    /**
+     * 扫描比赛文件状态
+     * @param {string} contestId - 比赛ID
+     * @returns {Promise<Object>} 文件状态信息
+     */
+    async scanContestFiles(contestId) {
+        return await this.fileManager.scanContestFiles(contestId);
+    }
+
+    /**
+     * 更新比赛文件状态
+     * @param {string} contestId - 比赛ID
+     * @param {string} fileType - 文件类型 (statement, solution, summary)
+     * @param {string} status - 新状态 (pending, uploaded)
+     */
+    updateContestFileStatus(contestId, fileType, status) {
+        const contest = this.findContestById(contestId);
+        if (contest && contest.files && contest.files[fileType]) {
+            contest.files[fileType].status = status;
+            contest.files[fileType].uploadTime = status === 'uploaded' ? new Date().toISOString() : null;
+            contest.modifiedTime = new Date().toISOString();
+            this.saveData();
+            
+            // 触发文件状态更新事件
+            this.emit('contestFileStatusUpdated', {
+                contestId,
+                fileType,
+                status,
+                contest
+            });
+        }
     }
 
     /**

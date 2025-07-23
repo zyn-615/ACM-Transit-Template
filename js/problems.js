@@ -11,6 +11,9 @@ class ProblemManager {
         this.initialized = false;
         this.allTags = new Set();
         
+        // 初始化新文件管理器
+        this.fileManager = new NewFileManager();
+        
         // 初始化
         this.initialize();
     }
@@ -70,13 +73,32 @@ class ProblemManager {
                 contestId: problemData.contestId?.trim() || '',
                 problemIndex: problemData.problemIndex?.trim() || '', // A, B, C, etc.
                 
-                // 使用相对路径
+                // 使用相对路径（向后兼容）
                 pdfPath: this.normalizeRelativePath(problemData.pdfPath?.trim() || ''),
                 solutionPath: this.normalizeRelativePath(problemData.solutionPath?.trim() || ''),
                 
                 notes: problemData.notes?.trim() || '',
                 addedTime: new Date().toISOString(),
                 solvedTime: problemData.status === 'solved' ? new Date().toISOString() : null
+            };
+
+            // 生成独立的题目文件结构
+            const fileStructure = this.fileManager.createProblemStructure(newProblem.id);
+            
+            // 扩展题目数据结构以支持新文件架构
+            newProblem.files = {
+                statement: {
+                    path: fileStructure.statement,
+                    status: 'pending'
+                },
+                solutions: {
+                    official: {
+                        path: fileStructure.solutions.official,
+                        author: 'official',
+                        status: 'pending',
+                        uploadTime: null
+                    }
+                }
             };
 
             // 验证难度值（如果提供）
@@ -92,6 +114,9 @@ class ProblemManager {
             
             // 保存数据
             this.saveData();
+            
+            // 显示文件上传指导
+            this.showProblemFileGuidance(newProblem.id, fileStructure);
             
             // 触发事件
             this.emit('problemAdded', { problem: newProblem });
@@ -212,6 +237,371 @@ class ProblemManager {
 
         } catch (error) {
             console.error('删除题目失败:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * 添加题解作者
+     * @param {string} problemId - 题目ID
+     * @param {string} authorName - 作者姓名 (用作文件夹名)
+     * @param {string} displayName - 显示名称
+     * @returns {Promise<string>} 新作者的解题路径
+     */
+    async addSolutionAuthor(problemId, authorName, displayName) {
+        try {
+            const problem = this.findProblemById(problemId);
+            if (!problem) {
+                throw new Error('题目不存在');
+            }
+
+            // 确保题目有新的文件结构
+            if (!problem.files || !problem.files.solutions) {
+                throw new Error('题目数据结构不完整，请重新创建题目');
+            }
+
+            // 检查作者是否已存在
+            const authorKey = this.fileManager.sanitizeAuthorName(authorName);
+            if (problem.files.solutions[authorKey]) {
+                throw new Error('该作者已存在');
+            }
+
+            // 生成新作者的题解路径
+            const solutionPath = this.fileManager.addSolutionAuthor(problemId, authorName, displayName);
+            
+            // 添加到题目数据结构
+            problem.files.solutions[authorKey] = {
+                path: solutionPath,
+                author: displayName || authorName,
+                status: 'pending',
+                uploadTime: null
+            };
+
+            // 更新修改时间
+            problem.modifiedTime = new Date().toISOString();
+
+            // 保存数据
+            this.saveData();
+            
+            // 显示上传指导
+            const guidance = this.fileManager.generateUploadGuidance(solutionPath, 'pdf');
+            this.showSolutionUploadGuidance(guidance, displayName || authorName);
+            
+            // 触发事件
+            this.emit('solutionAuthorAdded', {
+                problemId,
+                authorKey,
+                authorName: displayName || authorName,
+                solutionPath,
+                problem
+            });
+            
+            console.log(`题解作者添加成功: ${displayName || authorName} -> ${solutionPath}`);
+            return solutionPath;
+        } catch (error) {
+            console.error('添加题解作者失败:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * 显示题目文件上传指导界面
+     * @param {string} problemId - 题目ID
+     * @param {Object} fileStructure - 文件结构对象
+     */
+    showProblemFileGuidance(problemId, fileStructure) {
+        // 创建模态框
+        const modal = document.createElement('div');
+        modal.className = 'problem-file-guidance-modal';
+        modal.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 10000;
+        `;
+        
+        modal.innerHTML = `
+            <div class="modal-content" style="
+                background: white;
+                padding: 30px;
+                border-radius: 10px;
+                max-width: 600px;
+                width: 90%;
+                max-height: 80vh;
+                overflow-y: auto;
+                box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+                font-family: system-ui, -apple-system, sans-serif;
+            ">
+                <h3 style="margin: 0 0 20px 0; color: #333; display: flex; align-items: center;">
+                    📝 题目文件夹已创建
+                </h3>
+                <p style="margin: 0 0 20px 0; color: #666;">
+                    题目 ID: <strong style="color: #2196f3;">${problemId}</strong>
+                </p>
+                <div class="file-paths">
+                    <h4 style="margin: 0 0 15px 0; color: #333;">请手动复制文件到以下位置:</h4>
+                    <div class="path-item" style="margin-bottom: 15px; padding: 15px; background: #f8f9fa; border-radius: 6px; border-left: 4px solid #e91e63;">
+                        <strong style="color: #333;">题目描述 (problem.pdf):</strong><br>
+                        <code style="background: #fff; padding: 5px 8px; border-radius: 3px; font-size: 12px; color: #e91e63; word-break: break-all; display: block; margin-top: 5px;">
+                            ${fileStructure.statement}
+                        </code>
+                        <button onclick="navigator.clipboard.writeText('${fileStructure.statement}')" style="
+                            margin-top: 8px;
+                            padding: 4px 8px;
+                            background: #e91e63;
+                            color: white;
+                            border: none;
+                            border-radius: 3px;
+                            cursor: pointer;
+                            font-size: 12px;
+                        ">复制路径</button>
+                    </div>
+                    <div class="path-item" style="margin-bottom: 15px; padding: 15px; background: #f8f9fa; border-radius: 6px; border-left: 4px solid #4caf50;">
+                        <strong style="color: #333;">官方题解 (solution.pdf):</strong><br>
+                        <code style="background: #fff; padding: 5px 8px; border-radius: 3px; font-size: 12px; color: #e91e63; word-break: break-all; display: block; margin-top: 5px;">
+                            ${fileStructure.solutions.official}
+                        </code>
+                        <button onclick="navigator.clipboard.writeText('${fileStructure.solutions.official}')" style="
+                            margin-top: 8px;
+                            padding: 4px 8px;
+                            background: #4caf50;
+                            color: white;
+                            border: none;
+                            border-radius: 3px;
+                            cursor: pointer;
+                            font-size: 12px;
+                        ">复制路径</button>
+                    </div>
+                    <div style="padding: 15px; background: #e8f5e8; border-radius: 6px; margin-top: 15px;">
+                        <h5 style="margin: 0 0 10px 0; color: #2e7d32;">💡 多作者支持:</h5>
+                        <ul style="margin: 0; padding-left: 20px; color: #555; font-size: 14px;">
+                            <li>后续可以添加更多作者的题解</li>
+                            <li>每个作者都有独立的文件夹</li>
+                            <li>在题目详情页点击"添加题解作者"</li>
+                        </ul>
+                    </div>
+                </div>
+                <div style="text-align: center; margin-top: 20px;">
+                    <button onclick="this.parentElement.parentElement.remove()" style="
+                        padding: 10px 20px;
+                        background: #2196f3;
+                        color: white;
+                        border: none;
+                        border-radius: 5px;
+                        cursor: pointer;
+                        font-size: 14px;
+                    ">了解，关闭指导</button>
+                </div>
+            </div>
+        `;
+        
+        // 添加到页面并处理点击关闭
+        document.body.appendChild(modal);
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                modal.remove();
+            }
+        });
+    }
+
+    /**
+     * 显示题解上传指导界面
+     * @param {Object} guidance - 上传指导信息
+     * @param {string} authorName - 作者名称
+     */
+    showSolutionUploadGuidance(guidance, authorName) {
+        // 创建模态框
+        const modal = document.createElement('div');
+        modal.className = 'solution-upload-guidance-modal';
+        modal.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 10000;
+        `;
+        
+        modal.innerHTML = `
+            <div class="modal-content" style="
+                background: white;
+                padding: 30px;
+                border-radius: 10px;
+                max-width: 500px;
+                width: 90%;
+                max-height: 80vh;
+                overflow-y: auto;
+                box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+                font-family: system-ui, -apple-system, sans-serif;
+            ">
+                <h3 style="margin: 0 0 20px 0; color: #333; display: flex; align-items: center;">
+                    ✨ 题解作者已添加
+                </h3>
+                <p style="margin: 0 0 20px 0; color: #666;">
+                    作者: <strong style="color: #4caf50;">${authorName}</strong>
+                </p>
+                <div class="guidance-content">
+                    <h4 style="margin: 0 0 15px 0; color: #333;">请复制题解文件到:</h4>
+                    <div class="path-item" style="padding: 15px; background: #f8f9fa; border-radius: 6px; border-left: 4px solid #4caf50;">
+                        <code style="background: #fff; padding: 5px 8px; border-radius: 3px; font-size: 12px; color: #e91e63; word-break: break-all; display: block;">
+                            ${guidance.targetPath}
+                        </code>
+                        <button onclick="navigator.clipboard.writeText('${guidance.targetPath}')" style="
+                            margin-top: 8px;
+                            padding: 4px 8px;
+                            background: #4caf50;
+                            color: white;
+                            border: none;
+                            border-radius: 3px;
+                            cursor: pointer;
+                            font-size: 12px;
+                        ">复制路径</button>
+                    </div>
+                    <div style="padding: 15px; background: #e3f2fd; border-radius: 6px; margin-top: 15px;">
+                        <h5 style="margin: 0 0 10px 0; color: #1976d2;">📁 创建文件夹命令:</h5>
+                        <code style="background: #fff; padding: 8px; border-radius: 3px; font-size: 11px; color: #333; display: block;">
+                            ${guidance.createFolderCommand}
+                        </code>
+                    </div>
+                </div>
+                <div style="text-align: center; margin-top: 20px;">
+                    <button onclick="this.parentElement.parentElement.remove()" style="
+                        padding: 10px 20px;
+                        background: #4caf50;
+                        color: white;
+                        border: none;
+                        border-radius: 5px;
+                        cursor: pointer;
+                        font-size: 14px;
+                    ">明白了</button>
+                </div>
+            </div>
+        `;
+        
+        // 添加到页面并处理点击关闭
+        document.body.appendChild(modal);
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                modal.remove();
+            }
+        });
+    }
+
+    /**
+     * 扫描题目文件状态
+     * @param {string} problemId - 题目ID
+     * @returns {Promise<Object>} 文件状态信息
+     */
+    async scanProblemFiles(problemId) {
+        const problem = this.findProblemById(problemId);
+        if (!problem || !problem.files) {
+            return null;
+        }
+
+        // 获取所有作者列表
+        const authorList = Object.keys(problem.files.solutions || {});
+        return await this.fileManager.scanProblemFiles(problemId, authorList);
+    }
+
+    /**
+     * 更新题目文件状态
+     * @param {string} problemId - 题目ID
+     * @param {string} fileType - 文件类型 (statement 或 solution)
+     * @param {string} authorKey - 作者键名 (仅当fileType为solution时需要)
+     * @param {string} status - 新状态 (pending, uploaded)
+     */
+    updateProblemFileStatus(problemId, fileType, authorKey, status) {
+        const problem = this.findProblemById(problemId);
+        if (!problem || !problem.files) return;
+
+        if (fileType === 'statement' && problem.files.statement) {
+            problem.files.statement.status = status;
+        } else if (fileType === 'solution' && authorKey && problem.files.solutions[authorKey]) {
+            problem.files.solutions[authorKey].status = status;
+            problem.files.solutions[authorKey].uploadTime = status === 'uploaded' ? new Date().toISOString() : null;
+        }
+
+        problem.modifiedTime = new Date().toISOString();
+        this.saveData();
+
+        // 触发文件状态更新事件
+        this.emit('problemFileStatusUpdated', {
+            problemId,
+            fileType,
+            authorKey,
+            status,
+            problem
+        });
+    }
+
+    /**
+     * 获取题目的所有作者列表
+     * @param {string} problemId - 题目ID
+     * @returns {Array} 作者信息列表
+     */
+    getProblemAuthors(problemId) {
+        const problem = this.findProblemById(problemId);
+        if (!problem || !problem.files || !problem.files.solutions) {
+            return [];
+        }
+
+        return Object.entries(problem.files.solutions).map(([key, solution]) => ({
+            key,
+            author: solution.author,
+            path: solution.path,
+            status: solution.status,
+            uploadTime: solution.uploadTime
+        }));
+    }
+
+    /**
+     * 删除题解作者
+     * @param {string} problemId - 题目ID
+     * @param {string} authorKey - 作者键名
+     * @returns {boolean} 删除是否成功
+     */
+    removeSolutionAuthor(problemId, authorKey) {
+        try {
+            const problem = this.findProblemById(problemId);
+            if (!problem || !problem.files || !problem.files.solutions) {
+                throw new Error('题目不存在或数据结构不完整');
+            }
+
+            // 不允许删除官方题解
+            if (authorKey === 'official') {
+                throw new Error('不能删除官方题解');
+            }
+
+            if (!problem.files.solutions[authorKey]) {
+                throw new Error('作者不存在');
+            }
+
+            // 删除作者
+            delete problem.files.solutions[authorKey];
+            problem.modifiedTime = new Date().toISOString();
+            this.saveData();
+
+            // 触发事件
+            this.emit('solutionAuthorRemoved', {
+                problemId,
+                authorKey,
+                problem
+            });
+
+            console.log(`题解作者删除成功: ${authorKey}`);
+            return true;
+        } catch (error) {
+            console.error('删除题解作者失败:', error);
             throw error;
         }
     }

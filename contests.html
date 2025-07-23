@@ -118,15 +118,43 @@
                             <input type="url" id="contest-url" class="form-control" placeholder="https://...">
                         </div>
                     </div>
-                    <div class="form-grid">
-                        <div class="form-group">
-                            <label class="form-label" for="contest-pdf-file">比赛PDF文件</label>
-                            <input type="file" id="contest-pdf-file" class="form-control" accept=".pdf">
-                            <div class="form-help">选择比赛PDF文件（可选）</div>
+                    <div class="form-section">
+                        <h3 class="section-title">📁 文件管理</h3>
+                        <div class="file-upload-area">
+                            <div class="upload-item">
+                                <label class="form-label">比赛题面 (contest.pdf)</label>
+                                <input type="file" id="contestStatement" class="form-control" accept=".pdf">
+                                <div class="file-guidance" id="statementGuidance" style="display:none;"></div>
+                            </div>
+                            <div class="upload-item">
+                                <label class="form-label">官方题解 (editorial.pdf)</label>
+                                <input type="file" id="contestSolution" class="form-control" accept=".pdf">
+                                <div class="file-guidance" id="solutionGuidance" style="display:none;"></div>
+                            </div>
+                            <div class="upload-item">
+                                <label class="form-label">比赛总结 (review.pdf)</label>
+                                <input type="file" id="contestSummary" class="form-control" accept=".pdf">
+                                <div class="file-guidance" id="summaryGuidance" style="display:none;"></div>
+                            </div>
                         </div>
-                        <div class="form-group">
-                            <label class="form-label" for="contest-summary">总结路径</label>
-                            <input type="text" id="contest-summary" class="form-control" placeholder="./files/summaries/cf-round-900-summary.md">
+                    </div>
+
+                    <!-- 文件状态显示区域 -->
+                    <div class="file-status-section" id="fileStatus" style="display:none;">
+                        <h4 class="section-subtitle">📊 文件状态</h4>
+                        <div class="status-grid">
+                            <div class="status-item">
+                                <span class="status-label">题面文件:</span>
+                                <span class="status-indicator" id="statementStatus">⏳ 待上传</span>
+                            </div>
+                            <div class="status-item">
+                                <span class="status-label">官方题解:</span>
+                                <span class="status-indicator" id="solutionStatus">⏳ 待上传</span>
+                            </div>
+                            <div class="status-item">
+                                <span class="status-label">比赛总结:</span>
+                                <span class="status-indicator" id="summaryStatus">⏳ 待上传</span>
+                            </div>
                         </div>
                     </div>
                     <div class="form-group">
@@ -278,15 +306,24 @@
                             <input type="url" id="edit-contest-url" class="form-control">
                         </div>
                     </div>
-                    <div class="form-grid">
-                        <div class="form-group">
-                            <label class="form-label" for="edit-contest-pdf-file">比赛PDF文件</label>
-                            <input type="file" id="edit-contest-pdf-file" class="form-control" accept=".pdf">
-                            <div class="form-help">选择比赛PDF文件（可选）</div>
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label" for="edit-contest-summary">总结路径</label>
-                            <input type="text" id="edit-contest-summary" class="form-control">
+                    <div class="form-section">
+                        <h3 class="section-title">📁 文件管理</h3>
+                        <div class="file-upload-area">
+                            <div class="upload-item">
+                                <label class="form-label">比赛题面 (contest.pdf)</label>
+                                <input type="file" id="editContestStatement" class="form-control" accept=".pdf">
+                                <div class="file-guidance" id="editStatementGuidance" style="display:none;"></div>
+                            </div>
+                            <div class="upload-item">
+                                <label class="form-label">官方题解 (editorial.pdf)</label>
+                                <input type="file" id="editContestSolution" class="form-control" accept=".pdf">
+                                <div class="file-guidance" id="editSolutionGuidance" style="display:none;"></div>
+                            </div>
+                            <div class="upload-item">
+                                <label class="form-label">比赛总结 (review.pdf)</label>
+                                <input type="file" id="editContestSummary" class="form-control" accept=".pdf">
+                                <div class="file-guidance" id="editSummaryGuidance" style="display:none;"></div>
+                            </div>
                         </div>
                     </div>
                     <div class="form-group">
@@ -304,6 +341,7 @@
 
     <!-- 加载 JavaScript -->
     <script src="js/storage.js"></script>
+    <script src="js/new-file-manager.js"></script>
     <script src="js/contest-generator.js"></script>
     <script src="js/contests.js"></script>
     <script src="js/search.js"></script>
@@ -484,6 +522,11 @@
 
         // 处理文件上传
         function handleFileUpload(fileInput, folder) {
+            // 检查 fileInput 是否为 null 或 undefined
+            if (!fileInput || !fileInput.files) {
+                return '';
+            }
+            
             const file = fileInput.files[0];
             if (file) {
                 // 生成标准化文件名
@@ -533,8 +576,9 @@ cp “文件路径” “${fullPath}”
                     solved: document.getElementById('contest-solved').value,
                     totalProblems: document.getElementById('contest-total').value,
                     url: document.getElementById('contest-url').value,
-                    pdfPath: handleFileUpload(document.getElementById('contest-pdf-file'), 'contest-pdfs'),
-                    summaryPath: document.getElementById('contest-summary').value,
+                    // 移除旧的 PDF 路径，新系统不再需要这个字段
+                    pdfPath: '',
+                    summaryPath: '',
                     notes: document.getElementById('contest-notes').value,
                     autoGenerateCount: document.getElementById('auto-generate-count').value
                 };
@@ -699,8 +743,9 @@ cp “文件路径” “${fullPath}”
                     solved: document.getElementById('edit-contest-solved').value,
                     totalProblems: document.getElementById('edit-contest-total').value,
                     url: document.getElementById('edit-contest-url').value,
-                    pdfPath: handleFileUpload(document.getElementById('edit-contest-pdf-file'), 'contest-pdfs') || currentEditingContest?.pdfPath || '',
-                    summaryPath: document.getElementById('edit-contest-summary').value,
+                    // 移除旧的 PDF 路径，新系统不再需要这个字段
+                    pdfPath: '',
+                    summaryPath: '',
                     notes: document.getElementById('edit-contest-notes').value,
                     autoGenerateCount: document.getElementById('edit-auto-generate-count').value
                 };

@@ -248,5 +248,105 @@ class FileManager {
     }
 }
 
+/**
+ * 新版文件管理器 - 支持比赛和题目的独立文件管理
+ */
+class NewFileManager {
+    constructor() {
+        this.contestBasePath = './files/contests';
+        this.problemBasePath = './files/problems';
+    }
+    
+    // 比赛文件夹创建
+    createContestFolders(contestId) {
+        const contestPath = `${this.contestBasePath}/${contestId}`;
+        return {
+            statement: `${contestPath}/statement/`,
+            solution: `${contestPath}/solution/`,
+            summary: `${contestPath}/summary/`,
+            files: {
+                statement: `${contestPath}/statement/contest.pdf`,
+                solution: `${contestPath}/solution/editorial.pdf`,
+                summary: `${contestPath}/summary/review.pdf`
+            }
+        };
+    }
+    
+    // 题目文件夹创建  
+    createProblemFolders(problemId) {
+        const problemPath = `${this.problemBasePath}/${problemId}`;
+        return {
+            statement: `${problemPath}/statement/`,
+            solution: `${problemPath}/solution/`,
+            files: {
+                statement: `${problemPath}/statement/problem.pdf`,
+                officialSolution: `${problemPath}/solution/official/solution.pdf`
+            }
+        };
+    }
+    
+    // 添加题解作者
+    addSolutionAuthor(problemId, authorName) {
+        const authorFolder = authorName.toLowerCase().replace(/[^a-z0-9]/g, '');
+        const solutionPath = `${this.problemBasePath}/${problemId}/solution/${authorFolder}/solution.pdf`;
+        return {
+            authorFolder: authorFolder,
+            filePath: solutionPath
+        };
+    }
+    
+    // 检查文件状态
+    async checkFileStatus(filePath) {
+        try {
+            const response = await fetch(filePath, { method: 'HEAD' });
+            return response.ok ? 'uploaded' : 'pending';
+        } catch {
+            return 'pending';
+        }
+    }
+    
+    // 创建物理文件夹（通过Shell脚本执行）
+    async createPhysicalFolders(contestId, type = 'contest') {
+        try {
+            let folders;
+            if (type === 'contest') {
+                folders = this.createContestFolders(contestId);
+                // 需要创建三个文件夹
+                const pathsToCreate = [
+                    folders.statement,
+                    folders.solution,
+                    folders.summary
+                ];
+                
+                // 这里只是返回需要创建的路径，实际创建需要通过其他方式
+                return {
+                    success: true,
+                    paths: pathsToCreate,
+                    files: folders.files
+                };
+            } else if (type === 'problem') {
+                folders = this.createProblemFolders(contestId); // contestId作为problemId使用
+                const pathsToCreate = [
+                    folders.statement,
+                    folders.solution,
+                    `${folders.solution}official/`
+                ];
+                
+                return {
+                    success: true,
+                    paths: pathsToCreate,
+                    files: folders.files
+                };
+            }
+        } catch (error) {
+            return {
+                success: false,
+                error: error.message
+            };
+        }
+    }
+}
+
 // 创建全局实例
 window.fileManager = new FileManager();
+window.newFileManager = new NewFileManager();

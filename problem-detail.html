@@ -123,19 +123,53 @@
             </div>
         </div>
 
-        <!-- 题解管理 -->
+        <!-- 题目文件管理 -->
         <div class="card">
             <div class="card-header">
-                <h2 class="card-title">题解管理</h2>
+                <h2 class="card-title">📁 题目文件</h2>
                 <div class="card-actions">
-                    <button class="btn btn-primary btn-sm" onclick="openSolutionManager()">
-                        📝 管理题解文件
+                    <button class="btn btn-outline btn-sm" onclick="refreshProblemFiles()">🔄 刷新状态</button>
+                    <button class="btn btn-primary btn-sm" onclick="showProblemFileUploadGuidance()">📁 上传指导</button>
+                </div>
+            </div>
+            <div class="problem-files-section">
+                <div class="files-grid">
+                    <div class="file-item">
+                        <div class="file-icon">📄</div>
+                        <div class="file-info">
+                            <h4>题目描述</h4>
+                            <div class="file-link" id="problemStatementLink">
+                                <span class="status">检查中...</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="file-item">
+                        <div class="file-icon">🏆</div>
+                        <div class="file-info">
+                            <h4>官方题解</h4>
+                            <div class="file-link" id="officialSolutionLink">
+                                <span class="status">检查中...</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 题解作者管理 -->
+        <div class="card">
+            <div class="card-header">
+                <h2 class="card-title">👥 题解作者</h2>
+                <div class="card-actions">
+                    <button class="btn btn-primary btn-sm" onclick="showAddAuthorModal()">
+                        ➕ 添加作者
                     </button>
+                    <button class="btn btn-outline btn-sm" onclick="refreshSolutionAuthors()">🔄 刷新</button>
                 </div>
             </div>
             <div class="form-container">
-                <div id="solutions-container">
-                    <!-- 题解列表将在这里渲染 -->
+                <div id="solution-authors-container">
+                    <!-- 题解作者列表将在这里渲染 -->
                 </div>
             </div>
         </div>
@@ -157,6 +191,7 @@
 
     <!-- 加载 JavaScript -->
     <script src="js/storage.js"></script>
+    <script src="js/new-file-manager.js"></script>
     <script src="js/contest-generator.js"></script>
     <script src="js/problems.js"></script>
     <script src="js/contests.js"></script>
@@ -166,7 +201,7 @@
     
     <script>
         // 全局变量
-        let storage, problemManager, contestManager, globalSearch;
+        let storage, problemManager, contestManager, globalSearch, newFileManager;
         let currentProblem = null;
         let problemId = null;
 
@@ -196,6 +231,7 @@
                 storage = new DataStorage();
                 problemManager = new ProblemManager(storage);
                 contestManager = new ContestManager(storage);
+                newFileManager = new NewFileManager();
 
                 // 初始化全局搜索
                 try {
@@ -216,6 +252,10 @@
                 
                 // 加载题目数据 - 使用多策略匹配
                 await loadProblemData();
+                
+                // 加载题目文件和作者信息
+                await loadProblemFiles();
+                await loadSolutionAuthors();
                 
                 console.log('题目详情页面初始化完成，题目:', currentProblem?.title || '未找到');
             } catch (error) {
@@ -446,82 +486,65 @@
 
         // 加载题目相关文件
         async function loadProblemFiles() {
+            if (!currentProblem || !newFileManager) return;
+            
             try {
-                if (!window.fileManager) {
-                    document.getElementById('problem-files-container').innerHTML = '<span class="text-gray-500">文件管理器未初始化</span>';
-                    document.getElementById('solution-files-container').innerHTML = '<span class="text-gray-500">文件管理器未初始化</span>';
-                    return;
-                }
-
-                // 确定比赛ID和题目字母
-                let contestId = currentProblem.contestId;
-                let problemLetter = currentProblem.problemLetter;
-
-                // 如果没有比赛ID，尝试从题目ID中推断
-                if (!contestId && currentProblem.id) {
-                    const match = currentProblem.id.match(/^([^-]+)-([a-zA-Z])$/);
-                    if (match) {
-                        contestId = match[1];
-                        problemLetter = match[2].toUpperCase();
-                    }
-                }
-
-                if (contestId && problemLetter) {
-                    // 渲染题目相关文件
-                    const problemFilesHtml = await window.fileManager.renderProblemFiles(contestId, problemLetter);
-                    if (problemFilesHtml) {
-                        const tempDiv = document.createElement('div');
-                        tempDiv.innerHTML = problemFilesHtml;
-                        
-                        // 提取题面文件
-                        const problemSection = tempDiv.querySelector('.file-section h4');
-                        if (problemSection && problemSection.textContent === '题面') {
-                            const problemFiles = problemSection.nextElementSibling;
-                            document.getElementById('problem-files-container').innerHTML = problemFiles ? problemFiles.outerHTML : '<span class="text-gray-500">暂无题面文件</span>';
-                        } else {
-                            document.getElementById('problem-files-container').innerHTML = '<span class="text-gray-500">暂无题面文件</span>';
-                        }
-                        
-                        // 提取题解文件
-                        const solutionSection = Array.from(tempDiv.querySelectorAll('.file-section h4')).find(h => h.textContent === '题解');
-                        if (solutionSection && solutionSection.nextElementSibling) {
-                            document.getElementById('solution-files-container').innerHTML = solutionSection.nextElementSibling.innerHTML;
-                        } else {
-                            document.getElementById('solution-files-container').innerHTML = '<span class="text-gray-500">暂无题解文件</span>';
-                        }
-                    } else {
-                        document.getElementById('problem-files-container').innerHTML = '<span class="text-gray-500">暂无题面文件</span>';
-                        document.getElementById('solution-files-container').innerHTML = '<span class="text-gray-500">暂无题解文件</span>';
-                    }
-                } else {
-                    // 兼容原有的PDF和题解路径显示
-                    let problemFilesHtml = '';
-                    let solutionFilesHtml = '';
-                    
-                    if (currentProblem.pdfPath) {
-                        problemFilesHtml = `<a href="${currentProblem.pdfPath}" target="_blank" class="file-link">📄 题目PDF</a>`;
-                    }
-                    
-                    if (currentProblem.solutionPath) {
-                        const ext = currentProblem.solutionPath.split('.').pop().toLowerCase();
-                        const icon = ext === 'pdf' ? '📄' : '📝';
-                        const fileName = currentProblem.solutionPath.split('/').pop();
-                        
-                        if (ext === 'md') {
-                            const viewerUrl = `file-viewer.html?file=${encodeURIComponent(currentProblem.solutionPath)}&name=${encodeURIComponent(fileName)}`;
-                            solutionFilesHtml = `<a href="${viewerUrl}" target="_blank" class="file-link">${icon} ${fileName}</a>`;
-                        } else {
-                            solutionFilesHtml = `<a href="${currentProblem.solutionPath}" target="_blank" class="file-link">${icon} ${fileName}</a>`;
-                        }
-                    }
-                    
-                    document.getElementById('problem-files-container').innerHTML = problemFilesHtml || '<span class="text-gray-500">暂无题面文件</span>';
-                    document.getElementById('solution-files-container').innerHTML = solutionFilesHtml || '<span class="text-gray-500">暂无题解文件</span>';
-                }
+                // 扫描题目文件状态
+                const fileStatus = await newFileManager.scanProblemFiles(currentProblem.id);
+                
+                // 更新文件链接显示
+                updateProblemFileLinks(fileStatus);
+                
+                console.log('题目文件状态加载完成:', fileStatus);
             } catch (error) {
-                console.error('加载文件失败:', error);
-                document.getElementById('problem-files-container').innerHTML = '<span class="text-red-500">文件加载失败</span>';
-                document.getElementById('solution-files-container').innerHTML = '<span class="text-red-500">文件加载失败</span>';
+                console.error('加载题目文件失败:', error);
+                showNotification('加载题目文件失败: ' + error.message, 'error');
+            }
+        }
+        
+        // 更新题目文件链接显示
+        function updateProblemFileLinks(fileStatus) {
+            const elements = {
+                statement: document.getElementById('problemStatementLink'),
+                official: document.getElementById('officialSolutionLink')
+            };
+
+            // 题目描述文件
+            if (elements.statement) {
+                if (fileStatus.statement && fileStatus.statement.exists) {
+                    elements.statement.innerHTML = `
+                        <a href="${fileStatus.statement.path}" target="_blank" class="file-link-item">
+                            ✅ 查看题目
+                        </a>
+                        <small class="file-info">最后检查: ${new Date(fileStatus.statement.lastChecked).toLocaleString()}</small>
+                    `;
+                } else if (fileStatus.statement) {
+                    elements.statement.innerHTML = `
+                        <span class="status pending">⏳ 文件未上传</span>
+                        <small class="file-info">路径: ${fileStatus.statement.path}</small>
+                    `;
+                } else {
+                    elements.statement.innerHTML = '<span class="status pending">⏳ 待扫描</span>';
+                }
+            }
+            
+            // 官方题解文件
+            if (elements.official) {
+                if (fileStatus.solutions && fileStatus.solutions.official && fileStatus.solutions.official.exists) {
+                    elements.official.innerHTML = `
+                        <a href="${fileStatus.solutions.official.path}" target="_blank" class="file-link-item">
+                            ✅ 查看题解
+                        </a>
+                        <small class="file-info">最后检查: ${new Date(fileStatus.solutions.official.lastChecked).toLocaleString()}</small>
+                    `;
+                } else if (fileStatus.solutions && fileStatus.solutions.official) {
+                    elements.official.innerHTML = `
+                        <span class="status pending">⏳ 文件未上传</span>
+                        <small class="file-info">路径: ${fileStatus.solutions.official.path}</small>
+                    `;
+                } else {
+                    elements.official.innerHTML = '<span class="status pending">⏳ 待扫描</span>';
+                }
             }
         }
 
@@ -692,6 +715,379 @@
                 alert(message);
             }
         }
+        
+        // 加载题解作者信息
+        async function loadSolutionAuthors() {
+            if (!currentProblem || !problemManager) return;
+            
+            try {
+                // 获取题目的所有作者
+                const authors = problemManager.getProblemAuthors(currentProblem.id);
+                
+                // 渲染作者列表
+                renderSolutionAuthors(authors);
+                
+                console.log('题解作者加载完成:', authors);
+            } catch (error) {
+                console.error('加载题解作者失败:', error);
+                showNotification('加载题解作者失败: ' + error.message, 'error');
+            }
+        }
+        
+        // 渲染题解作者列表
+        function renderSolutionAuthors(authors) {
+            const container = document.getElementById('solution-authors-container');
+            if (!container) return;
+            
+            if (!authors || authors.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-authors">
+                        <p class="text-gray-500">暂无题解作者</p>
+                        <p class="text-sm text-gray-400">点击上方按钮添加第一个作者</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            let html = '';
+            authors.forEach(author => {
+                const statusClass = author.status === 'uploaded' ? 'status-success' : 'status-pending';
+                const statusText = author.status === 'uploaded' ? '✅ 已上传' : '⏳ 待上传';
+                
+                html += `
+                    <div class="author-item">
+                        <div class="author-info">
+                            <div class="author-avatar">${author.author.charAt(0).toUpperCase()}</div>
+                            <div class="author-details">
+                                <h4 class="author-name">${escapeHtml(author.author)}</h4>
+                                <p class="author-path">${escapeHtml(author.path)}</p>
+                                <span class="author-status ${statusClass}">${statusText}</span>
+                            </div>
+                        </div>
+                        <div class="author-actions">
+                            <button type="button" class="btn btn-outline btn-xs" onclick="showAuthorFileGuidance('${author.key}', '${escapeHtml(author.path)}')"> 
+                                📁 上传指导
+                            </button>
+                            <button type="button" class="btn btn-outline btn-xs" onclick="refreshAuthorStatus('${author.key}')">
+                                🔄 刷新
+                            </button>
+                            ${author.key !== 'official' ? `
+                                <button type="button" class="btn btn-danger btn-xs" onclick="removeAuthor('${author.key}')">
+                                    🗑️ 删除
+                                </button>
+                            ` : ''}
+                        </div>
+                    </div>
+                `;
+            });
+            
+            container.innerHTML = html;
+        }
+        
+        // 刷新题目文件状态
+        async function refreshProblemFiles() {
+            showNotification('正在刷新文件状态...', 'info');
+            await loadProblemFiles();
+            showNotification('文件状态刷新完成', 'success');
+        }
+        
+        // 刷新题解作者信息
+        async function refreshSolutionAuthors() {
+            showNotification('正在刷新作者信息...', 'info');
+            await loadSolutionAuthors();
+            showNotification('作者信息刷新完成', 'success');
+        }
+        
+        // 显示题目文件上传指导
+        function showProblemFileUploadGuidance() {
+            if (!currentProblem || !newFileManager) {
+                showNotification('无法获取题目信息', 'error');
+                return;
+            }
+
+            // 创建题目文件结构
+            const fileStructure = newFileManager.createProblemStructure(currentProblem.id);
+
+            // 创建指导模态框
+            const modal = document.createElement('div');
+            modal.className = 'file-guidance-modal';
+            modal.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0, 0, 0, 0.5);
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                z-index: 10000;
+            `;
+
+            modal.innerHTML = `
+                <div class="modal-content" style="
+                    background: white;
+                    padding: 30px;
+                    border-radius: 10px;
+                    max-width: 700px;
+                    width: 90%;
+                    max-height: 80vh;
+                    overflow-y: auto;
+                    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+                    font-family: system-ui, -apple-system, sans-serif;
+                ">
+                    <h3 style="margin: 0 0 20px 0; color: #333;">
+                        📁 题目 ${currentProblem.id} 文件上传指导
+                    </h3>
+                    <div class="file-paths">
+                        <div style="margin-bottom: 15px; padding: 15px; background: #f8f9fa; border-radius: 6px; border-left: 4px solid #4caf50;">
+                            <strong>题目描述:</strong><br>
+                            <code style="background: #fff; padding: 5px 8px; border-radius: 3px; font-size: 12px; color: #e91e63; word-break: break-all; display: block; margin-top: 5px;">
+                                ${fileStructure.statement}
+                            </code>
+                        </div>
+                        <div style="margin-bottom: 15px; padding: 15px; background: #f8f9fa; border-radius: 6px; border-left: 4px solid #2196f3;">
+                            <strong>官方题解:</strong><br>
+                            <code style="background: #fff; padding: 5px 8px; border-radius: 3px; font-size: 12px; color: #e91e63; word-break: break-all; display: block; margin-top: 5px;">
+                                ${fileStructure.solutions.official}
+                            </code>
+                        </div>
+                    </div>
+                    <div style="text-align: center; margin-top: 20px;">
+                        <button onclick="this.parentElement.parentElement.remove()" style="
+                            padding: 10px 20px;
+                            background: #2196f3;
+                            color: white;
+                            border: none;
+                            border-radius: 5px;
+                            cursor: pointer;
+                            font-size: 14px;
+                        ">关闭</button>
+                    </div>
+                </div>
+            `;
+
+            document.body.appendChild(modal);
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    modal.remove();
+                }
+            });
+        }
+        
+        // 显示添加作者模态框
+        function showAddAuthorModal() {
+            if (!currentProblem) {
+                showNotification('题目信息未加载', 'error');
+                return;
+            }
+            
+            const modal = document.createElement('div');
+            modal.className = 'add-author-modal';
+            modal.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0, 0, 0, 0.5);
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                z-index: 10000;
+            `;
+
+            modal.innerHTML = `
+                <div class="modal-content" style="
+                    background: white;
+                    padding: 30px;
+                    border-radius: 10px;
+                    max-width: 500px;
+                    width: 90%;
+                    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+                    font-family: system-ui, -apple-system, sans-serif;
+                ">
+                    <h3 style="margin: 0 0 20px 0; color: #333;">
+                        ⭐ 添加题解作者
+                    </h3>
+                    <form id="addAuthorForm" onsubmit="handleAddAuthor(event)">
+                        <div style="margin-bottom: 15px;">
+                            <label style="display: block; margin-bottom: 5px; font-weight: 500;">作者姓名 *</label>
+                            <input type="text" id="newAuthorName" placeholder="请输入作者姓名（如: 张同学）" style="
+                                width: 100%;
+                                padding: 10px;
+                                border: 1px solid #ddd;
+                                border-radius: 5px;
+                                font-size: 14px;
+                                box-sizing: border-box;
+                            " required>
+                        </div>
+                        <div style="margin-bottom: 15px;">
+                            <label style="display: block; margin-bottom: 5px; font-weight: 500;">显示名称</label>
+                            <input type="text" id="newAuthorDisplayName" placeholder="显示名称（可选，默认与姓名相同）" style="
+                                width: 100%;
+                                padding: 10px;
+                                border: 1px solid #ddd;
+                                border-radius: 5px;
+                                font-size: 14px;
+                                box-sizing: border-box;
+                            ">
+                        </div>
+                        <div style="text-align: right; margin-top: 20px;">
+                            <button type="button" onclick="this.closest('.add-author-modal').remove()" style="
+                                padding: 10px 20px;
+                                background: #6b7280;
+                                color: white;
+                                border: none;
+                                border-radius: 5px;
+                                cursor: pointer;
+                                font-size: 14px;
+                                margin-right: 10px;
+                            ">取消</button>
+                            <button type="submit" style="
+                                padding: 10px 20px;
+                                background: #2196f3;
+                                color: white;
+                                border: none;
+                                border-radius: 5px;
+                                cursor: pointer;
+                                font-size: 14px;
+                            ">添加作者</button>
+                        </div>
+                    </form>
+                </div>
+            `;
+
+            document.body.appendChild(modal);
+            
+            // 聚焦到输入框
+            setTimeout(() => {
+                const input = modal.querySelector('#newAuthorName');
+                if (input) input.focus();
+            }, 100);
+            
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    modal.remove();
+                }
+            });
+        }
+        
+        // 处理添加作者
+        async function handleAddAuthor(event) {
+            event.preventDefault();
+            
+            const authorName = document.getElementById('newAuthorName').value.trim();
+            const displayName = document.getElementById('newAuthorDisplayName').value.trim() || authorName;
+            
+            if (!authorName) {
+                showNotification('请输入作者姓名', 'warning');
+                return;
+            }
+            
+            try {
+                await problemManager.addSolutionAuthor(currentProblem.id, authorName, displayName);
+                
+                // 关闭模态框
+                document.querySelector('.add-author-modal')?.remove();
+                
+                // 刷新作者列表
+                await loadSolutionAuthors();
+                
+                showNotification(`作者 "${authorName}" 添加成功`, 'success');
+            } catch (error) {
+                showNotification('添加作者失败: ' + error.message, 'error');
+            }
+        }
+        
+        // 显示作者文件指导
+        function showAuthorFileGuidance(authorKey, filePath) {
+            const modal = document.createElement('div');
+            modal.className = 'author-file-modal';
+            modal.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0, 0, 0, 0.5);
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                z-index: 10000;
+            `;
+
+            modal.innerHTML = `
+                <div class="modal-content" style="
+                    background: white;
+                    padding: 30px;
+                    border-radius: 10px;
+                    max-width: 600px;
+                    width: 90%;
+                    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+                    font-family: system-ui, -apple-system, sans-serif;
+                ">
+                    <h3 style="margin: 0 0 20px 0; color: #333;">
+                        📁 作者文件上传指导
+                    </h3>
+                    <div style="margin-bottom: 15px; padding: 15px; background: #f8f9fa; border-radius: 6px; border-left: 4px solid #2196f3;">
+                        <strong>文件路径:</strong><br>
+                        <code style="background: #fff; padding: 5px 8px; border-radius: 3px; font-size: 12px; color: #e91e63; word-break: break-all; display: block; margin-top: 5px;">
+                            ${filePath}
+                        </code>
+                    </div>
+                    <div style="margin-bottom: 15px; padding: 15px; background: #fff3cd; border-radius: 6px; border-left: 4px solid #ffc107;">
+                        <strong>上传步骤:</strong><br>
+                        <ol style="margin: 10px 0 0 20px; padding: 0;">
+                            <li>准备好题解文件（PDF、Markdown等）</li>
+                            <li>将文件命名为 <code>solution.pdf</code> 或 <code>solution.md</code></li>
+                            <li>手动复制文件到上述路径</li>
+                            <li>点击刷新按钮检查文件状态</li>
+                        </ol>
+                    </div>
+                    <div style="text-align: center; margin-top: 20px;">
+                        <button onclick="this.parentElement.parentElement.remove()" style="
+                            padding: 10px 20px;
+                            background: #2196f3;
+                            color: white;
+                            border: none;
+                            border-radius: 5px;
+                            cursor: pointer;
+                            font-size: 14px;
+                        ">关闭</button>
+                    </div>
+                </div>
+            `;
+
+            document.body.appendChild(modal);
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    modal.remove();
+                }
+            });
+        }
+        
+        // 刷新作者状态
+        async function refreshAuthorStatus(authorKey) {
+            showNotification('正在刷新作者状态...', 'info');
+            await loadSolutionAuthors();
+            showNotification('作者状态刷新完成', 'success');
+        }
+        
+        // 删除作者
+        async function removeAuthor(authorKey) {
+            if (!currentProblem) return;
+            
+            if (confirm('确定要删除这个作者的题解吗？')) {
+                try {
+                    await problemManager.removeSolutionAuthor(currentProblem.id, authorKey);
+                    await loadSolutionAuthors();
+                    showNotification('作者删除成功', 'success');
+                } catch (error) {
+                    showNotification('删除作者失败: ' + error.message, 'error');
+                }
+            }
+        }
     </script>
     
     <style>
@@ -831,6 +1227,176 @@
 
         .text-red-500 {
             color: #ef4444;
+        }
+        
+        .text-sm {
+            font-size: 0.875rem;
+        }
+        
+        .text-gray-400 {
+            color: #9ca3af;
+        }
+        
+        /* 文件显示样式 */
+        .problem-files-section {
+            margin-bottom: 1.5rem;
+        }
+        
+        .files-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+        
+        .file-item {
+            display: flex;
+            align-items: center;
+            padding: 1rem;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            transition: all 0.2s ease;
+        }
+        
+        .file-item:hover {
+            background: #f1f5f9;
+            border-color: #cbd5e1;
+        }
+        
+        .file-icon {
+            font-size: 2rem;
+            margin-right: 1rem;
+        }
+        
+        .file-info {
+            flex: 1;
+        }
+        
+        .file-info h4 {
+            margin: 0 0 0.5rem 0;
+            font-size: 1rem;
+            font-weight: 600;
+            color: #374151;
+        }
+        
+        .file-link-item {
+            display: inline-block;
+            padding: 0.375rem 0.75rem;
+            background: #2196f3;
+            color: white;
+            text-decoration: none;
+            border-radius: 4px;
+            font-size: 0.875rem;
+            transition: background-color 0.2s ease;
+        }
+        
+        .file-link-item:hover {
+            background: #1976d2;
+            text-decoration: none;
+            color: white;
+        }
+        
+        .file-info small {
+            display: block;
+            margin-top: 0.25rem;
+            color: #6b7280;
+            font-size: 0.75rem;
+        }
+        
+        .status {
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+        
+        .status.pending {
+            background: #fef3c7;
+            color: #d97706;
+        }
+        
+        /* 作者管理样式 */
+        .empty-authors {
+            text-align: center;
+            padding: 2rem;
+            color: #6b7280;
+        }
+        
+        .author-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 1rem;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+        }
+        
+        .author-info {
+            display: flex;
+            align-items: center;
+            flex: 1;
+        }
+        
+        .author-avatar {
+            width: 40px;
+            height: 40px;
+            background: #3b82f6;
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            margin-right: 1rem;
+        }
+        
+        .author-details {
+            flex: 1;
+        }
+        
+        .author-name {
+            margin: 0 0 0.25rem 0;
+            font-size: 1rem;
+            font-weight: 600;
+            color: #374151;
+        }
+        
+        .author-path {
+            margin: 0 0 0.5rem 0;
+            font-size: 0.875rem;
+            color: #6b7280;
+            font-family: monospace;
+            word-break: break-all;
+        }
+        
+        .author-status {
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+        
+        .author-status.status-success {
+            background: #d1fae5;
+            color: #065f46;
+        }
+        
+        .author-status.status-pending {
+            background: #fef3c7;
+            color: #d97706;
+        }
+        
+        .author-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+        
+        .btn-xs {
+            padding: 0.25rem 0.5rem;
+            font-size: 0.75rem;
         }
     </style>
 </body>

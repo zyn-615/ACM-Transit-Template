@@ -109,19 +109,29 @@
                             <label class="form-label" for="problem-url">题目链接</label>
                             <input type="url" id="problem-url" class="form-control" placeholder="https://...">
                         </div>
-                        <div class="form-group">
-                            <label class="form-label" for="problem-pdf-file">题目PDF文件</label>
-                            <input type="file" id="problem-pdf-file" class="form-control" accept=".pdf">
-                            <div class="form-help">选择题目PDF文件（可选）</div>
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">题解管理</label>
-                        <div class="solution-management">
-                            <button type="button" class="btn btn-outline btn-sm" onclick="openSolutionManager()">
-                                📝 管理题解文件
-                            </button>
-                            <div class="form-help">点击管理题解文件的上传和组织</div>
+                    <div class="form-section">
+                        <h3 class="section-title">📝 题解管理</h3>
+                        <div class="solution-authors">
+                            <div class="author-item official">
+                                <label class="form-label">📄 题目描述 (problem.pdf)</label>
+                                <input type="file" id="problemStatement" class="form-control" accept=".pdf">
+                                <div class="file-guidance" id="statementGuidance" style="display:none;"></div>
+                            </div>
+                            <div class="author-item official">
+                                <label class="form-label">🏆 官方题解 (solution.pdf)</label>
+                                <input type="file" id="officialSolution" class="form-control" accept=".pdf">
+                                <div class="file-guidance" id="officialGuidance" style="display:none;"></div>
+                            </div>
+                            <div class="author-management">
+                                <h4 class="section-subtitle">👥 添加题解作者</h4>
+                                <div class="add-author-form">
+                                    <input type="text" id="newAuthorName" class="form-control" placeholder="作者姓名 (如: 张同学)">
+                                    <button type="button" class="btn btn-primary btn-sm" onclick="addSolutionAuthor()">添加作者</button>
+                                </div>
+                                <div class="authors-list" id="authorsList">
+                                    <!-- 动态生成的作者列表 -->
+                                </div>
+                            </div>
                         </div>
                     </div>
                     <div class="form-group">
@@ -295,6 +305,7 @@
 
     <!-- 加载 JavaScript -->
     <script src="js/storage.js"></script>
+    <script src="js/new-file-manager.js"></script>
     <script src="js/problems.js"></script>
     <script src="js/search.js"></script>
     
@@ -575,6 +586,11 @@
 
         // 处理文件上传
         function handleFileUpload(fileInput, folder) {
+            // 检查 fileInput 是否为 null 或 undefined
+            if (!fileInput || !fileInput.files) {
+                return '';
+            }
+            
             const file = fileInput.files[0];
             if (file) {
                 // 生成标准化文件名
@@ -611,6 +627,87 @@ cp “文件路径” “${fullPath}”
             return false;
         }
 
+        // 添加题解作者
+        function addSolutionAuthor() {
+            const authorName = document.getElementById('newAuthorName').value.trim();
+            if (!authorName) {
+                showNotification('请输入作者姓名', 'warning');
+                return;
+            }
+
+            // 检查是否有当前编辑的题目ID
+            if (window.currentProblemId) {
+                problemManager.addSolutionAuthor(window.currentProblemId, authorName, authorName)
+                    .then(() => {
+                        // 刷新作者列表显示
+                        updateAuthorsList();
+                        document.getElementById('newAuthorName').value = '';
+                        showNotification(`作者 "${authorName}" 添加成功`, 'success');
+                    })
+                    .catch(error => {
+                        showNotification('添加作者失败: ' + error.message, 'error');
+                    });
+            } else {
+                showNotification('请先保存题目后再添加作者', 'warning');
+            }
+        }
+
+        // 更新作者列表显示
+        function updateAuthorsList() {
+            const authorsList = document.getElementById('authorsList');
+            if (!authorsList || !window.currentProblemId) return;
+
+            const authors = problemManager.getProblemAuthors(window.currentProblemId);
+            
+            let html = '';
+            authors.filter(author => author.key !== 'official').forEach(author => {
+                html += `
+                    <div class="author-item">
+                        <div class="author-info">
+                            <strong>${author.author}</strong>
+                            <small class="author-status ${author.status}">${author.status === 'uploaded' ? '✅ 已上传' : '⏳ 待上传'}</small>
+                        </div>
+                        <div class="author-actions">
+                            <button type="button" class="btn btn-outline btn-xs" onclick="showAuthorPath('${author.key}', '${author.path}')">
+                                📁 查看路径
+                            </button>
+                            <button type="button" class="btn btn-danger btn-xs" onclick="removeAuthor('${author.key}')">
+                                🗑️ 删除
+                            </button>
+                        </div>
+                    </div>
+                `;
+            });
+
+            if (html === '') {
+                html = '<p class="no-authors">暂无其他作者，点击上方添加</p>';
+            }
+
+            authorsList.innerHTML = html;
+        }
+
+        // 显示作者路径信息
+        function showAuthorPath(authorKey, path) {
+            const message = `作者文件路径:\n${path}\n\n请将题解文件复制到此位置`;
+            alert(message);
+        }
+
+        // 删除作者
+        function removeAuthor(authorKey) {
+            if (!window.currentProblemId) return;
+            
+            if (confirm('确定要删除这个作者的题解吗？')) {
+                problemManager.removeSolutionAuthor(window.currentProblemId, authorKey)
+                    .then(() => {
+                        updateAuthorsList();
+                        showNotification('作者删除成功', 'success');
+                    })
+                    .catch(error => {
+                        showNotification('删除作者失败: ' + error.message, 'error');
+                    });
+            }
+        }
+
         // 处理题目提交
         function handleSubmitProblem(event) {
             event.preventDefault();
@@ -624,7 +721,8 @@ cp “文件路径” “${fullPath}”
                     problemIndex: document.getElementById('problem-index').value,
                     url: document.getElementById('problem-url').value,
                     contestId: document.getElementById('problem-contest').value,
-                    pdfPath: handleFileUpload(document.getElementById('problem-pdf-file'), 'contest-pdfs'),
+                    // 移除旧的 PDF 路径，新系统不再需要这个字段
+                    pdfPath: '',
                     tags: selectedTags,
                     notes: document.getElementById('problem-notes').value
                 };

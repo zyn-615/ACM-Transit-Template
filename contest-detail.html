@@ -35,17 +35,40 @@
         </div>
 
         <!-- 比赛文件区域 -->
-        <div class="card">
-            <div class="card-header">
-                <h2 class="card-title">比赛资料</h2>
-                <div class="card-actions">
-                    <button class="btn btn-outline btn-sm" onclick="refreshContestFiles()">刷新文件</button>
+        <div class="contest-files-section">
+            <h3 class="section-title">📁 比赛文件</h3>
+            <div class="files-grid">
+                <div class="file-item">
+                    <div class="file-icon">📄</div>
+                    <div class="file-info">
+                        <h4>比赛题面</h4>
+                        <div class="file-link" id="statementLink">
+                            <span class="status">检查中...</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="file-item">
+                    <div class="file-icon">💡</div>
+                    <div class="file-info">
+                        <h4>官方题解</h4>
+                        <div class="file-link" id="solutionLink">
+                            <span class="status">检查中...</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="file-item">
+                    <div class="file-icon">📋</div>
+                    <div class="file-info">
+                        <h4>比赛总结</h4>
+                        <div class="file-link" id="summaryLink">
+                            <span class="status">检查中...</span>
+                        </div>
+                    </div>
                 </div>
             </div>
-            <div class="card-body">
-                <div id="contest-files-container">
-                    正在加载比赛文件...
-                </div>
+            <div class="file-actions">
+                <button class="btn btn-outline btn-sm" onclick="refreshContestFiles()">🔄 刷新文件状态</button>
+                <button class="btn btn-primary btn-sm" onclick="showFileUploadGuidance()">📁 查看上传指导</button>
             </div>
         </div>
 
@@ -125,6 +148,7 @@
 
     <!-- 加载 JavaScript -->
     <script src="js/storage.js"></script>
+    <script src="js/new-file-manager.js"></script>
     <script src="js/contest-detail.js"></script>
     <script src="js/contest-board-manager.js"></script>
     <script src="js/search.js"></script>
@@ -181,6 +205,153 @@
                 showNotification('页面初始化失败: ' + error.message, 'error');
             }
         });
+
+        // 加载比赛文件状态
+        async function loadContestFiles() {
+            const contestId = getContestIdFromUrl();
+            if (!contestId) return;
+
+            try {
+                // 创建新文件管理器实例
+                const newFileManager = new NewFileManager();
+                
+                // 扫描比赛文件状态
+                const fileStatus = await newFileManager.scanContestFiles(contestId);
+                
+                // 更新文件链接显示
+                updateFileLinks(fileStatus);
+                
+                console.log('比赛文件状态加载完成:', fileStatus);
+            } catch (error) {
+                console.error('加载比赛文件失败:', error);
+                showNotification('加载比赛文件失败: ' + error.message, 'error');
+            }
+        }
+
+        // 更新文件链接显示
+        function updateFileLinks(fileStatus) {
+            const elements = {
+                statement: document.getElementById('statementLink'),
+                solution: document.getElementById('solutionLink'),
+                summary: document.getElementById('summaryLink')
+            };
+
+            Object.entries(fileStatus).forEach(([type, file]) => {
+                if (elements[type]) {
+                    if (file.exists) {
+                        elements[type].innerHTML = `
+                            <a href="${file.path}" target="_blank" class="file-link-item">
+                                ✅ 查看文件
+                            </a>
+                            <small class="file-info">最后检查: ${new Date(file.lastChecked).toLocaleString()}</small>
+                        `;
+                    } else {
+                        elements[type].innerHTML = `
+                            <span class="status pending">⏳ 文件未上传</span>
+                            <small class="file-info">路径: ${file.path}</small>
+                        `;
+                    }
+                }
+            });
+        }
+
+        // 刷新比赛文件状态
+        async function refreshContestFiles() {
+            showNotification('正在刷新文件状态...', 'info');
+            await loadContestFiles();
+            showNotification('文件状态刷新完成', 'success');
+        }
+
+        // 显示文件上传指导
+        function showFileUploadGuidance() {
+            const contestId = getContestIdFromUrl();
+            if (!contestId) {
+                showNotification('无法获取比赛ID', 'error');
+                return;
+            }
+
+            // 创建新文件管理器实例
+            const newFileManager = new NewFileManager();
+            const fileStructure = newFileManager.createContestStructure(contestId);
+
+            // 创建指导模态框
+            const modal = document.createElement('div');
+            modal.className = 'file-guidance-modal';
+            modal.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0, 0, 0, 0.5);
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                z-index: 10000;
+            `;
+
+            modal.innerHTML = `
+                <div class="modal-content" style="
+                    background: white;
+                    padding: 30px;
+                    border-radius: 10px;
+                    max-width: 600px;
+                    width: 90%;
+                    max-height: 80vh;
+                    overflow-y: auto;
+                    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+                    font-family: system-ui, -apple-system, sans-serif;
+                ">
+                    <h3 style="margin: 0 0 20px 0; color: #333;">
+                        📁 ${contestId} 文件上传指导
+                    </h3>
+                    <div class="file-paths">
+                        <div style="margin-bottom: 15px; padding: 15px; background: #f8f9fa; border-radius: 6px; border-left: 4px solid #4caf50;">
+                            <strong>比赛题面:</strong><br>
+                            <code style="background: #fff; padding: 5px 8px; border-radius: 3px; font-size: 12px; color: #e91e63; word-break: break-all; display: block; margin-top: 5px;">
+                                ${fileStructure.statement}
+                            </code>
+                        </div>
+                        <div style="margin-bottom: 15px; padding: 15px; background: #f8f9fa; border-radius: 6px; border-left: 4px solid #2196f3;">
+                            <strong>官方题解:</strong><br>
+                            <code style="background: #fff; padding: 5px 8px; border-radius: 3px; font-size: 12px; color: #e91e63; word-break: break-all; display: block; margin-top: 5px;">
+                                ${fileStructure.solution}
+                            </code>
+                        </div>
+                        <div style="margin-bottom: 15px; padding: 15px; background: #f8f9fa; border-radius: 6px; border-left: 4px solid #ff9800;">
+                            <strong>比赛总结:</strong><br>
+                            <code style="background: #fff; padding: 5px 8px; border-radius: 3px; font-size: 12px; color: #e91e63; word-break: break-all; display: block; margin-top: 5px;">
+                                ${fileStructure.summary}
+                            </code>
+                        </div>
+                    </div>
+                    <div style="text-align: center; margin-top: 20px;">
+                        <button onclick="this.parentElement.parentElement.remove()" style="
+                            padding: 10px 20px;
+                            background: #2196f3;
+                            color: white;
+                            border: none;
+                            border-radius: 5px;
+                            cursor: pointer;
+                            font-size: 14px;
+                        ">关闭</button>
+                    </div>
+                </div>
+            `;
+
+            document.body.appendChild(modal);
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    modal.remove();
+                }
+            });
+        }
+
+        // 从URL获取比赛ID
+        function getContestIdFromUrl() {
+            const urlParams = new URLSearchParams(window.location.search);
+            return urlParams.get('id');
+        }
 
         // 编辑题目记录（由ContestDetailManager调用）
         function editProblemRecord(letter) {
