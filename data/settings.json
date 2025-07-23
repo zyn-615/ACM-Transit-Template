@@ -1,0 +1,17 @@
+{
+  "defaultFilePath": "./files/",
+  "autoSync": false,
+  "sortBy": "date",
+  "sortOrder": "desc",
+  "viewMode": "table",
+  "theme": "light",
+  "itemsPerPage": 20,
+  "language": "zh-cn",
+  "enableNotifications": true,
+  "dateFormat": "YYYY-MM-DD",
+  "timeFormat": "HH:mm:ss",
+  "contestPlatforms": ["Codeforces", "AtCoder", "CodeChef", "ICPC", "CCPC", "NowCoder", "自定义"],
+  "problemTags": ["dp", "greedy", "graph", "math", "string", "data-structure", "implementation", "brute-force", "binary-search", "sorting"],
+  "difficultyLevels": [800, 900, 1000, 1100, 1200, 1300, 1400, 1500, 1600, 1700, 1800, 1900, 2000, 2100, 2200, 2300, 2400, 2500],
+  "version": "1.0"
+}

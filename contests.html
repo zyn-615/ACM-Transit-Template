@@ -1,0 +1,690 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>比赛管理 - ACM中转站</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <!-- 导航栏 -->
+    <nav class="navbar">
+        <div class="container">
+            <a href="index.html" class="navbar-brand">ACM中转站</a>
+            <ul class="navbar-nav">
+                <li><a href="index.html">仪表板</a></li>
+                <li><a href="contests.html" class="active">比赛管理</a></li>
+                <li><a href="problems.html">题目管理</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- 主要内容区域 -->
+    <div class="main-content">
+        <!-- 页面标题 -->
+        <div class="page-header">
+            <h1 class="page-title">比赛管理</h1>
+            <p class="page-subtitle">记录和管理你的ACM竞赛历程</p>
+        </div>
+
+        <!-- 快速统计 -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-value" id="total-contests">0</div>
+                <div class="stat-label">总比赛数</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="total-solved">0</div>
+                <div class="stat-label">总解题数</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="average-rank">-</div>
+                <div class="stat-label">平均排名</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="recent-contests">0</div>
+                <div class="stat-label">本月比赛</div>
+            </div>
+        </div>
+
+        <!-- 添加比赛表单 -->
+        <div class="card">
+            <div class="card-header">
+                <h2 class="card-title">添加新比赛</h2>
+                <div class="card-actions">
+                    <button class="btn btn-outline btn-sm" onclick="resetForm()">重置表单</button>
+                    <button class="btn btn-secondary btn-sm" onclick="importContests()">导入数据</button>
+                    <button class="btn btn-primary btn-sm" onclick="exportContests()">导出数据</button>
+                </div>
+            </div>
+            <div class="form-container">
+                <form id="contest-form" onsubmit="handleSubmitContest(event)">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label class="form-label" for="contest-name">比赛名称 *</label>
+                            <input type="text" id="contest-name" class="form-control" placeholder="输入比赛名称" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="contest-platform">比赛平台 *</label>
+                            <select id="contest-platform" class="form-control" required>
+                                <option value="">选择平台</option>
+                                <option value="Codeforces">Codeforces</option>
+                                <option value="AtCoder">AtCoder</option>
+                                <option value="CodeChef">CodeChef</option>
+                                <option value="ICPC">ICPC</option>
+                                <option value="CCPC">CCPC</option>
+                                <option value="NowCoder">NowCoder</option>
+                                <option value="自定义">自定义</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="contest-date">比赛日期 *</label>
+                            <input type="date" id="contest-date" class="form-control" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="contest-rank">最终排名</label>
+                            <input type="text" id="contest-rank" class="form-control" placeholder="如: 100/2000">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="contest-solved">解题数量</label>
+                            <input type="number" id="contest-solved" class="form-control" placeholder="解题数" min="0">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="contest-total">题目总数</label>
+                            <input type="number" id="contest-total" class="form-control" placeholder="总题数" min="0">
+                        </div>
+                    </div>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label class="form-label" for="contest-url">比赛链接</label>
+                            <input type="url" id="contest-url" class="form-control" placeholder="https://...">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="contest-rating">Rating变化</label>
+                            <input type="text" id="contest-rating" class="form-control" placeholder="如: +50, -20">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="contest-pdf">PDF路径</label>
+                        <input type="text" id="contest-pdf" class="form-control" placeholder="./files/pdfs/contest.pdf">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="contest-notes">备注</label>
+                        <textarea id="contest-notes" class="form-control" placeholder="比赛总结、收获、问题等"></textarea>
+                    </div>
+                    <div class="btn-group">
+                        <button type="submit" class="btn btn-primary">添加比赛</button>
+                        <button type="button" class="btn btn-outline" onclick="resetForm()">清空</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- 搜索和筛选 -->
+        <div class="search-bar">
+            <div class="search-grid">
+                <div class="search-input">
+                    <input type="text" id="search-query" class="form-control" placeholder="搜索比赛名称、平台、备注..." onkeyup="handleSearch()">
+                </div>
+                <div class="form-group">
+                    <select id="filter-platform" class="form-control" onchange="handleSearch()">
+                        <option value="">所有平台</option>
+                        <option value="Codeforces">Codeforces</option>
+                        <option value="AtCoder">AtCoder</option>
+                        <option value="CodeChef">CodeChef</option>
+                        <option value="ICPC">ICPC</option>
+                        <option value="CCPC">CCPC</option>
+                        <option value="NowCoder">NowCoder</option>
+                        <option value="自定义">自定义</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <select id="sort-by" class="form-control" onchange="handleSort()">
+                        <option value="date">按日期排序</option>
+                        <option value="name">按名称排序</option>
+                        <option value="platform">按平台排序</option>
+                        <option value="solved">按解题数排序</option>
+                        <option value="addedTime">按添加时间排序</option>
+                    </select>
+                </div>
+                <button class="btn btn-outline btn-sm" onclick="clearFilters()">清空筛选</button>
+            </div>
+        </div>
+
+        <!-- 比赛列表 -->
+        <div class="table-container">
+            <div class="table-header">
+                <h3>比赛记录</h3>
+                <div class="btn-group">
+                    <span id="contest-count" class="text-gray-500">共 0 场比赛</span>
+                    <button class="btn btn-sm btn-outline" onclick="refreshData()">刷新</button>
+                </div>
+            </div>
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th class="sortable" onclick="handleTableSort('name')">比赛名称</th>
+                        <th class="sortable" onclick="handleTableSort('platform')">平台</th>
+                        <th class="sortable" onclick="handleTableSort('date')">日期</th>
+                        <th class="sortable" onclick="handleTableSort('rank')">排名</th>
+                        <th class="sortable" onclick="handleTableSort('solved')">解题</th>
+                        <th class="sortable" onclick="handleTableSort('rating')">Rating</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody id="contests-table-body">
+                    <!-- 动态加载比赛数据 -->
+                </tbody>
+            </table>
+            <div id="no-contests" class="text-center p-4 hidden">
+                <p class="text-gray-500">暂无比赛记录</p>
+                <p class="text-gray-500">使用上面的表单添加你的第一场比赛吧！</p>
+            </div>
+        </div>
+
+        <!-- 分页 -->
+        <div id="pagination" class="pagination hidden">
+            <button class="pagination-btn" id="prev-btn" onclick="changePage(-1)" disabled>上一页</button>
+            <span class="pagination-info">第 <span id="current-page">1</span> 页，共 <span id="total-pages">1</span> 页</span>
+            <button class="pagination-btn" id="next-btn" onclick="changePage(1)" disabled>下一页</button>
+        </div>
+    </div>
+
+    <!-- 编辑比赛模态框 -->
+    <div id="edit-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">编辑比赛</h3>
+                <button class="modal-close" onclick="closeEditModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="edit-contest-form" onsubmit="handleUpdateContest(event)">
+                    <input type="hidden" id="edit-contest-id">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label class="form-label" for="edit-contest-name">比赛名称 *</label>
+                            <input type="text" id="edit-contest-name" class="form-control" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="edit-contest-platform">比赛平台 *</label>
+                            <select id="edit-contest-platform" class="form-control" required>
+                                <option value="Codeforces">Codeforces</option>
+                                <option value="AtCoder">AtCoder</option>
+                                <option value="CodeChef">CodeChef</option>
+                                <option value="ICPC">ICPC</option>
+                                <option value="CCPC">CCPC</option>
+                                <option value="NowCoder">NowCoder</option>
+                                <option value="自定义">自定义</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="edit-contest-date">比赛日期 *</label>
+                            <input type="date" id="edit-contest-date" class="form-control" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="edit-contest-rank">最终排名</label>
+                            <input type="text" id="edit-contest-rank" class="form-control" placeholder="如: 100/2000">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="edit-contest-solved">解题数量</label>
+                            <input type="number" id="edit-contest-solved" class="form-control" min="0">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="edit-contest-total">题目总数</label>
+                            <input type="number" id="edit-contest-total" class="form-control" min="0">
+                        </div>
+                    </div>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label class="form-label" for="edit-contest-url">比赛链接</label>
+                            <input type="url" id="edit-contest-url" class="form-control">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="edit-contest-rating">Rating变化</label>
+                            <input type="text" id="edit-contest-rating" class="form-control">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="edit-contest-pdf">PDF路径</label>
+                        <input type="text" id="edit-contest-pdf" class="form-control">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="edit-contest-notes">备注</label>
+                        <textarea id="edit-contest-notes" class="form-control"></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline" onclick="closeEditModal()">取消</button>
+                <button type="submit" form="edit-contest-form" class="btn btn-primary">保存修改</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 加载 JavaScript -->
+    <script src="js/storage.js"></script>
+    <script src="js/contests.js"></script>
+    
+    <script>
+        // 全局变量
+        let storage, contestManager;
+        let currentContests = [];
+        let currentPage = 1;
+        const itemsPerPage = 10;
+        let currentSort = { field: 'date', order: 'desc' };
+
+        // 页面初始化
+        document.addEventListener('DOMContentLoaded', async function() {
+            try {
+                // 初始化存储和管理器
+                storage = new DataStorage();
+                contestManager = new ContestManager(storage);
+
+                // 等待初始化完成
+                await new Promise(resolve => {
+                    if (contestManager.initialized) {
+                        resolve();
+                    } else {
+                        contestManager.on('initialized', resolve);
+                    }
+                });
+
+                // 设置事件监听器
+                setupEventListeners();
+                
+                // 加载数据
+                await loadData();
+                
+                console.log('比赛管理页面初始化完成');
+            } catch (error) {
+                console.error('页面初始化失败:', error);
+                showNotification('页面初始化失败: ' + error.message, 'error');
+            }
+        });
+
+        // 设置事件监听器
+        function setupEventListeners() {
+            contestManager.on('contestAdded', () => {
+                loadData();
+                showNotification('比赛添加成功', 'success');
+            });
+
+            contestManager.on('contestUpdated', () => {
+                loadData();
+                showNotification('比赛更新成功', 'success');
+            });
+
+            contestManager.on('contestDeleted', () => {
+                loadData();
+                showNotification('比赛删除成功', 'success');
+            });
+
+            // 模态框点击外部关闭
+            document.getElementById('edit-modal').addEventListener('click', function(e) {
+                if (e.target === this) {
+                    closeEditModal();
+                }
+            });
+        }
+
+        // 加载数据并更新UI
+        async function loadData() {
+            try {
+                currentContests = contestManager.getAllContests();
+                updateStatistics();
+                renderTable();
+            } catch (error) {
+                console.error('加载数据失败:', error);
+                showNotification('加载数据失败: ' + error.message, 'error');
+            }
+        }
+
+        // 更新统计信息
+        function updateStatistics() {
+            const stats = contestManager.getStatistics();
+            
+            document.getElementById('total-contests').textContent = stats.total;
+            document.getElementById('total-solved').textContent = stats.totalSolved;
+            document.getElementById('average-rank').textContent = stats.averageRank || '-';
+            
+            // 计算本月比赛数
+            const thisMonth = new Date().toISOString().substring(0, 7);
+            const monthlyContests = currentContests.filter(contest => 
+                contest.date.substring(0, 7) === thisMonth
+            ).length;
+            document.getElementById('recent-contests').textContent = monthlyContests;
+        }
+
+        // 渲染比赛表格
+        function renderTable() {
+            const tbody = document.getElementById('contests-table-body');
+            const noContests = document.getElementById('no-contests');
+            
+            if (currentContests.length === 0) {
+                tbody.innerHTML = '';
+                noContests.classList.remove('hidden');
+                document.getElementById('contest-count').textContent = '共 0 场比赛';
+                return;
+            }
+
+            noContests.classList.add('hidden');
+            document.getElementById('contest-count').textContent = `共 ${currentContests.length} 场比赛`;
+
+            // 分页
+            const startIndex = (currentPage - 1) * itemsPerPage;
+            const endIndex = startIndex + itemsPerPage;
+            const pageContests = currentContests.slice(startIndex, endIndex);
+
+            tbody.innerHTML = pageContests.map(contest => `
+                <tr>
+                    <td>
+                        <div class="font-weight-500">${escapeHtml(contest.name)}</div>
+                        ${contest.notes ? `<div class="text-gray-500 text-sm">${escapeHtml(contest.notes.substring(0, 50))}${contest.notes.length > 50 ? '...' : ''}</div>` : ''}
+                    </td>
+                    <td>
+                        <span class="tag">${escapeHtml(contest.platform)}</span>
+                    </td>
+                    <td>${formatDate(contest.date)}</td>
+                    <td>${contest.rank || '-'}</td>
+                    <td>
+                        ${contest.solved || 0}${contest.totalProblems ? `/${contest.totalProblems}` : ''}
+                    </td>
+                    <td>
+                        ${contest.ratingChange ? (contest.ratingChange.startsWith('+') || contest.ratingChange.startsWith('-') ? 
+                            `<span class="${contest.ratingChange.startsWith('+') ? 'text-green-500' : 'text-red-500'}">${escapeHtml(contest.ratingChange)}</span>` :
+                            escapeHtml(contest.ratingChange)) : '-'}
+                    </td>
+                    <td>
+                        <div class="table-actions">
+                            <button class="btn btn-sm btn-outline" onclick="editContest('${contest.id}')">编辑</button>
+                            <button class="btn btn-sm btn-primary" onclick="viewContest('${contest.id}')">查看</button>
+                            <button class="btn btn-sm btn-danger" onclick="deleteContest('${contest.id}')">删除</button>
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+
+            updatePagination();
+        }
+
+        // 更新分页
+        function updatePagination() {
+            const totalPages = Math.ceil(currentContests.length / itemsPerPage);
+            const pagination = document.getElementById('pagination');
+            
+            if (totalPages <= 1) {
+                pagination.classList.add('hidden');
+                return;
+            }
+
+            pagination.classList.remove('hidden');
+            document.getElementById('current-page').textContent = currentPage;
+            document.getElementById('total-pages').textContent = totalPages;
+            
+            document.getElementById('prev-btn').disabled = currentPage <= 1;
+            document.getElementById('next-btn').disabled = currentPage >= totalPages;
+        }
+
+        // 翻页
+        function changePage(delta) {
+            const totalPages = Math.ceil(currentContests.length / itemsPerPage);
+            const newPage = currentPage + delta;
+            
+            if (newPage >= 1 && newPage <= totalPages) {
+                currentPage = newPage;
+                renderTable();
+            }
+        }
+
+        // 处理比赛提交
+        function handleSubmitContest(event) {
+            event.preventDefault();
+            
+            try {
+                const formData = {
+                    name: document.getElementById('contest-name').value,
+                    platform: document.getElementById('contest-platform').value,
+                    date: document.getElementById('contest-date').value,
+                    rank: document.getElementById('contest-rank').value,
+                    solved: document.getElementById('contest-solved').value,
+                    totalProblems: document.getElementById('contest-total').value,
+                    url: document.getElementById('contest-url').value,
+                    ratingChange: document.getElementById('contest-rating').value,
+                    pdfPath: document.getElementById('contest-pdf').value,
+                    notes: document.getElementById('contest-notes').value
+                };
+
+                contestManager.addContest(formData);
+                resetForm();
+                
+            } catch (error) {
+                showNotification('添加比赛失败: ' + error.message, 'error');
+            }
+        }
+
+        // 重置表单
+        function resetForm() {
+            document.getElementById('contest-form').reset();
+            // 设置默认日期为今天
+            document.getElementById('contest-date').value = new Date().toISOString().split('T')[0];
+        }
+
+        // 搜索处理
+        function handleSearch() {
+            const query = document.getElementById('search-query').value;
+            const platform = document.getElementById('filter-platform').value;
+            
+            const criteria = {};
+            if (query) criteria.search = query;
+            if (platform) criteria.platform = platform;
+            
+            currentContests = contestManager.filterContests(criteria);
+            applySorting();
+            currentPage = 1;
+            renderTable();
+        }
+
+        // 排序处理
+        function handleSort() {
+            const sortBy = document.getElementById('sort-by').value;
+            currentSort.field = sortBy;
+            applySorting();
+            renderTable();
+        }
+
+        // 表格排序
+        function handleTableSort(field) {
+            if (currentSort.field === field) {
+                currentSort.order = currentSort.order === 'asc' ? 'desc' : 'asc';
+            } else {
+                currentSort.field = field;
+                currentSort.order = 'desc';
+            }
+            
+            // 更新排序指示器
+            document.querySelectorAll('.table th').forEach(th => {
+                th.classList.remove('sort-asc', 'sort-desc');
+            });
+            
+            const targetTh = event.target;
+            targetTh.classList.add(currentSort.order === 'asc' ? 'sort-asc' : 'sort-desc');
+            
+            applySorting();
+            renderTable();
+        }
+
+        // 应用排序
+        function applySorting() {
+            currentContests = contestManager.sortContests(currentSort.field, currentSort.order);
+        }
+
+        // 清空筛选
+        function clearFilters() {
+            document.getElementById('search-query').value = '';
+            document.getElementById('filter-platform').value = '';
+            document.getElementById('sort-by').value = 'date';
+            
+            currentContests = contestManager.getAllContests();
+            currentSort = { field: 'date', order: 'desc' };
+            applySorting();
+            currentPage = 1;
+            renderTable();
+        }
+
+        // 编辑比赛
+        function editContest(id) {
+            const contest = contestManager.findContestById(id);
+            if (!contest) {
+                showNotification('找不到指定的比赛记录', 'error');
+                return;
+            }
+
+            // 填充编辑表单
+            document.getElementById('edit-contest-id').value = contest.id;
+            document.getElementById('edit-contest-name').value = contest.name;
+            document.getElementById('edit-contest-platform').value = contest.platform;
+            document.getElementById('edit-contest-date').value = contest.date;
+            document.getElementById('edit-contest-rank').value = contest.rank || '';
+            document.getElementById('edit-contest-solved').value = contest.solved || '';
+            document.getElementById('edit-contest-total').value = contest.totalProblems || '';
+            document.getElementById('edit-contest-url').value = contest.url || '';
+            document.getElementById('edit-contest-rating').value = contest.ratingChange || '';
+            document.getElementById('edit-contest-pdf').value = contest.pdfPath || '';
+            document.getElementById('edit-contest-notes').value = contest.notes || '';
+
+            document.getElementById('edit-modal').classList.add('show');
+        }
+
+        // 处理比赛更新
+        function handleUpdateContest(event) {
+            event.preventDefault();
+            
+            try {
+                const id = document.getElementById('edit-contest-id').value;
+                const updates = {
+                    name: document.getElementById('edit-contest-name').value,
+                    platform: document.getElementById('edit-contest-platform').value,
+                    date: document.getElementById('edit-contest-date').value,
+                    rank: document.getElementById('edit-contest-rank').value,
+                    solved: document.getElementById('edit-contest-solved').value,
+                    totalProblems: document.getElementById('edit-contest-total').value,
+                    url: document.getElementById('edit-contest-url').value,
+                    ratingChange: document.getElementById('edit-contest-rating').value,
+                    pdfPath: document.getElementById('edit-contest-pdf').value,
+                    notes: document.getElementById('edit-contest-notes').value
+                };
+
+                contestManager.updateContest(id, updates);
+                closeEditModal();
+                
+            } catch (error) {
+                showNotification('更新比赛失败: ' + error.message, 'error');
+            }
+        }
+
+        // 关闭编辑模态框
+        function closeEditModal() {
+            document.getElementById('edit-modal').classList.remove('show');
+        }
+
+        // 查看比赛详情
+        function viewContest(id) {
+            const contest = contestManager.findContestById(id);
+            if (!contest) return;
+
+            // 简单的查看实现，可以扩展为详细页面
+            let details = `
+比赛名称: ${contest.name}
+比赛平台: ${contest.platform}
+比赛日期: ${contest.date}
+最终排名: ${contest.rank || '未记录'}
+解题情况: ${contest.solved || 0}/${contest.totalProblems || '?'}
+Rating变化: ${contest.ratingChange || '未记录'}
+`;
+            
+            if (contest.url) details += `\n比赛链接: ${contest.url}`;
+            if (contest.notes) details += `\n备注: ${contest.notes}`;
+
+            alert(details);
+        }
+
+        // 删除比赛
+        function deleteContest(id) {
+            const contest = contestManager.findContestById(id);
+            if (!contest) return;
+
+            if (confirm(`确定要删除比赛 "${contest.name}" 吗？此操作不可撤销。`)) {
+                try {
+                    contestManager.deleteContest(id);
+                } catch (error) {
+                    showNotification('删除比赛失败: ' + error.message, 'error');
+                }
+            }
+        }
+
+        // 导出比赛数据
+        async function exportContests() {
+            try {
+                const success = await contestManager.exportContests('contests-export.json');
+                if (success) {
+                    showNotification('比赛数据导出成功', 'success');
+                }
+            } catch (error) {
+                showNotification('导出失败: ' + error.message, 'error');
+            }
+        }
+
+        // 导入比赛数据
+        async function importContests() {
+            try {
+                const data = await storage.importData();
+                if (data) {
+                    const result = await contestManager.importContests(data);
+                    showNotification(`导入成功：新增 ${result.addedCount} 场比赛`, 'success');
+                }
+            } catch (error) {
+                showNotification('导入失败: ' + error.message, 'error');
+            }
+        }
+
+        // 刷新数据
+        async function refreshData() {
+            try {
+                await contestManager.reloadData();
+                await loadData();
+                showNotification('数据刷新成功', 'success');
+            } catch (error) {
+                showNotification('刷新失败: ' + error.message, 'error');
+            }
+        }
+
+        // 工具函数
+        function formatDate(dateString) {
+            try {
+                return new Date(dateString).toLocaleDateString('zh-CN');
+            } catch {
+                return dateString;
+            }
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function showNotification(message, type = 'info') {
+            if (storage && storage.showNotification) {
+                storage.showNotification(message, type);
+            } else {
+                alert(message);
+            }
+        }
+
+        // 设置默认日期
+        document.addEventListener('DOMContentLoaded', function() {
+            document.getElementById('contest-date').value = new Date().toISOString().split('T')[0];
+        });
+    </script>
+</body>
+</html>

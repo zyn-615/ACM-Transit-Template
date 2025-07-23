@@ -1,0 +1,696 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>仪表板 - ACM中转站</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <!-- 导航栏 -->
+    <nav class="navbar">
+        <div class="container">
+            <a href="index.html" class="navbar-brand">ACM中转站</a>
+            <ul class="navbar-nav">
+                <li><a href="index.html" class="active">仪表板</a></li>
+                <li><a href="contests.html">比赛管理</a></li>
+                <li><a href="problems.html">题目管理</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- 主要内容区域 -->
+    <div class="main-content">
+        <!-- 页面标题 -->
+        <div class="page-header">
+            <h1 class="page-title">欢迎使用ACM中转站</h1>
+            <p class="page-subtitle">一站式管理你的竞赛记录和题目进度</p>
+        </div>
+
+        <!-- 快速操作按钮 -->
+        <div class="card">
+            <div class="card-header">
+                <h2 class="card-title">快速操作</h2>
+                <div class="card-actions">
+                    <button class="btn btn-outline btn-sm" onclick="showAppInfo()">系统信息</button>
+                    <button class="btn btn-secondary btn-sm" onclick="syncAllData()">同步数据</button>
+                </div>
+            </div>
+            <div class="btn-group">
+                <a href="contests.html" class="btn btn-primary">添加比赛记录</a>
+                <a href="problems.html" class="btn btn-success">添加题目记录</a>
+                <button class="btn btn-outline" onclick="exportAllData()">导出所有数据</button>
+                <button class="btn btn-outline" onclick="importAllData()">导入数据</button>
+            </div>
+        </div>
+
+        <!-- 总体统计 -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-value" id="total-contests">0</div>
+                <div class="stat-label">总比赛数</div>
+                <div class="stat-change" id="contests-change">新增 0 场</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="total-problems">0</div>
+                <div class="stat-label">总题目数</div>
+                <div class="stat-change" id="problems-change">新增 0 道</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="solved-problems">0</div>
+                <div class="stat-label">已解决题目</div>
+                <div class="stat-change" id="solve-rate">解决率 0%</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="average-rank">-</div>
+                <div class="stat-label">平均排名</div>
+                <div class="stat-change" id="rank-trend">-</div>
+            </div>
+        </div>
+
+        <!-- 活动概览 -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-value" id="this-month-contests">0</div>
+                <div class="stat-label">本月比赛</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="this-week-solved">0</div>
+                <div class="stat-label">本周解题</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="average-difficulty">-</div>
+                <div class="stat-label">平均难度</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="active-days">0</div>
+                <div class="stat-label">活跃天数</div>
+            </div>
+        </div>
+
+        <!-- 最近活动 -->
+        <div class="card">
+            <div class="card-header">
+                <h2 class="card-title">最近活动</h2>
+                <div class="card-actions">
+                    <button class="btn btn-outline btn-sm" onclick="refreshData()">刷新</button>
+                </div>
+            </div>
+            
+            <!-- 最近比赛 -->
+            <div class="mb-4">
+                <h3 class="text-lg font-weight-600 mb-2">最近比赛</h3>
+                <div id="recent-contests">
+                    <div class="text-center text-gray-500 p-4">
+                        <p>暂无比赛记录</p>
+                        <a href="contests.html" class="btn btn-primary btn-sm mt-2">添加第一场比赛</a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 最近题目 -->
+            <div class="mb-4">
+                <h3 class="text-lg font-weight-600 mb-2">最近解决的题目</h3>
+                <div id="recent-problems">
+                    <div class="text-center text-gray-500 p-4">
+                        <p>暂无题目记录</p>
+                        <a href="problems.html" class="btn btn-success btn-sm mt-2">添加第一道题目</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 平台分布 -->
+        <div class="stats-grid">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">比赛平台分布</h3>
+                </div>
+                <div id="contest-platforms">
+                    <div class="text-center text-gray-500 p-4">暂无数据</div>
+                </div>
+            </div>
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">题目标签分布</h3>
+                </div>
+                <div id="problem-tags">
+                    <div class="text-center text-gray-500 p-4">暂无数据</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 进度图表 -->
+        <div class="card">
+            <div class="card-header">
+                <h2 class="card-title">月度进度</h2>
+            </div>
+            <div class="p-4">
+                <div class="flex justify-between items-center mb-4">
+                    <div class="text-center">
+                        <div class="text-2xl font-bold text-blue-500" id="current-month-contests">0</div>
+                        <div class="text-sm text-gray-500">本月比赛</div>
+                    </div>
+                    <div class="text-center">
+                        <div class="text-2xl font-bold text-green-500" id="current-month-problems">0</div>
+                        <div class="text-sm text-gray-500">本月解题</div>
+                    </div>
+                    <div class="text-center">
+                        <div class="text-2xl font-bold text-purple-500" id="streak-days">0</div>
+                        <div class="text-sm text-gray-500">连续天数</div>
+                    </div>
+                </div>
+                <div id="monthly-chart" class="text-center text-gray-500">
+                    <p>图表功能待实现</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 推荐和目标 -->
+        <div class="card">
+            <div class="card-header">
+                <h2 class="card-title">推荐与目标</h2>
+            </div>
+            <div class="p-4">
+                <div id="recommendations">
+                    <!-- 动态生成推荐内容 -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 系统信息模态框 -->
+    <div id="app-info-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">系统信息</h3>
+                <button class="modal-close" onclick="closeAppInfoModal()">&times;</button>
+            </div>
+            <div class="modal-body" id="app-info-content">
+                <!-- 动态填充系统信息 -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline" onclick="closeAppInfoModal()">关闭</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 加载JavaScript -->
+    <script src="js/storage.js"></script>
+    <script src="js/contests.js"></script>
+    <script src="js/problems.js"></script>
+    <script src="js/main.js"></script>
+    
+    <script>
+        // 仪表板专用功能
+        let dashboardData = {
+            contests: [],
+            problems: [],
+            lastUpdate: null
+        };
+
+        // 等待应用程序初始化完成
+        document.addEventListener('acm-appInitialized', function(event) {
+            console.log('仪表板：应用程序初始化完成');
+            loadDashboardData();
+        });
+
+        // 如果应用已经初始化，直接加载数据
+        setTimeout(() => {
+            if (window.ACMTransit && window.ACMTransit.initialized) {
+                loadDashboardData();
+            }
+        }, 1000);
+
+        // 加载仪表板数据
+        async function loadDashboardData() {
+            try {
+                const app = window.ACMTransit;
+                if (!app || !app.initialized) {
+                    console.log('等待应用程序初始化...');
+                    return;
+                }
+
+                // 获取统计数据
+                const stats = app.getStatistics();
+                
+                // 获取详细数据
+                if (app.contestManager) {
+                    dashboardData.contests = app.contestManager.getAllContests();
+                }
+                if (app.problemManager) {
+                    dashboardData.problems = app.problemManager.getAllProblems();
+                }
+
+                dashboardData.lastUpdate = new Date().toISOString();
+
+                // 更新UI
+                updateStatistics(stats);
+                updateRecentActivities();
+                updatePlatformDistribution();
+                updateRecommendations();
+
+            } catch (error) {
+                console.error('加载仪表板数据失败:', error);
+                showNotification('加载数据失败: ' + error.message, 'error');
+            }
+        }
+
+        // 更新统计信息
+        function updateStatistics(stats) {
+            // 基础统计
+            document.getElementById('total-contests').textContent = stats.contests.total;
+            document.getElementById('total-problems').textContent = stats.problems.total;
+            document.getElementById('solved-problems').textContent = stats.problems.solved;
+
+            // 计算解决率
+            const solveRate = stats.problems.total > 0 ? 
+                Math.round((stats.problems.solved / stats.problems.total) * 100) : 0;
+            document.getElementById('solve-rate').textContent = `解决率 ${solveRate}%`;
+
+            // 本月活动
+            const thisMonth = new Date().toISOString().substring(0, 7);
+            const thisMonthContests = dashboardData.contests.filter(c => 
+                c.date.substring(0, 7) === thisMonth
+            ).length;
+            document.getElementById('this-month-contests').textContent = thisMonthContests;
+            document.getElementById('current-month-contests').textContent = thisMonthContests;
+
+            // 本周解题
+            const oneWeekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+            const thisWeekSolved = dashboardData.problems.filter(p => 
+                p.status === 'solved' && 
+                p.solvedTime && 
+                new Date(p.solvedTime) >= oneWeekAgo
+            ).length;
+            document.getElementById('this-week-solved').textContent = thisWeekSolved;
+
+            // 平均难度
+            const solvedWithDifficulty = dashboardData.problems.filter(p => 
+                p.status === 'solved' && p.difficulty
+            );
+            if (solvedWithDifficulty.length > 0) {
+                const avgDiff = Math.round(
+                    solvedWithDifficulty.reduce((sum, p) => sum + p.difficulty, 0) / 
+                    solvedWithDifficulty.length
+                );
+                document.getElementById('average-difficulty').textContent = avgDiff;
+            }
+
+            // 平均排名（来自比赛管理器）
+            if (window.ACMTransit && window.ACMTransit.contestManager) {
+                const contestStats = window.ACMTransit.contestManager.getStatistics();
+                document.getElementById('average-rank').textContent = contestStats.averageRank || '-';
+            }
+
+            // 当月解题数
+            const thisMonthProblems = dashboardData.problems.filter(p => 
+                p.status === 'solved' && 
+                p.solvedTime && 
+                p.solvedTime.substring(0, 7) === thisMonth
+            ).length;
+            document.getElementById('current-month-problems').textContent = thisMonthProblems;
+
+            // 计算活跃天数
+            const activeDays = calculateActiveDays();
+            document.getElementById('active-days').textContent = activeDays;
+        }
+
+        // 更新最近活动
+        function updateRecentActivities() {
+            // 最近比赛
+            const recentContests = dashboardData.contests
+                .sort((a, b) => new Date(b.date) - new Date(a.date))
+                .slice(0, 5);
+
+            const contestsContainer = document.getElementById('recent-contests');
+            if (recentContests.length === 0) {
+                contestsContainer.innerHTML = `
+                    <div class="text-center text-gray-500 p-4">
+                        <p>暂无比赛记录</p>
+                        <a href="contests.html" class="btn btn-primary btn-sm mt-2">添加第一场比赛</a>
+                    </div>
+                `;
+            } else {
+                contestsContainer.innerHTML = recentContests.map(contest => `
+                    <div class="flex justify-between items-center p-3 border-b border-gray-200">
+                        <div>
+                            <div class="font-weight-500">${escapeHtml(contest.name)}</div>
+                            <div class="text-sm text-gray-500">${contest.platform} • ${formatDate(contest.date)}</div>
+                        </div>
+                        <div class="text-right">
+                            <div class="text-sm">${contest.rank || '-'}</div>
+                            <div class="text-sm text-gray-500">${contest.solved || 0}题</div>
+                        </div>
+                    </div>
+                `).join('');
+            }
+
+            // 最近解决的题目
+            const recentProblems = dashboardData.problems
+                .filter(p => p.status === 'solved' && p.solvedTime)
+                .sort((a, b) => new Date(b.solvedTime) - new Date(a.solvedTime))
+                .slice(0, 5);
+
+            const problemsContainer = document.getElementById('recent-problems');
+            if (recentProblems.length === 0) {
+                problemsContainer.innerHTML = `
+                    <div class="text-center text-gray-500 p-4">
+                        <p>暂无已解决的题目</p>
+                        <a href="problems.html" class="btn btn-success btn-sm mt-2">开始刷题</a>
+                    </div>
+                `;
+            } else {
+                problemsContainer.innerHTML = recentProblems.map(problem => `
+                    <div class="flex justify-between items-center p-3 border-b border-gray-200">
+                        <div>
+                            <div class="font-weight-500">${escapeHtml(problem.title)}</div>
+                            <div class="text-sm text-gray-500">
+                                ${problem.platform} • 
+                                ${problem.difficulty ? `难度 ${problem.difficulty}` : '未知难度'}
+                            </div>
+                        </div>
+                        <div class="tags-container">
+                            ${(problem.tags || []).slice(0, 2).map(tag => 
+                                `<span class="tag tag-${getTagClass(tag)}">${tag}</span>`
+                            ).join('')}
+                        </div>
+                    </div>
+                `).join('');
+            }
+        }
+
+        // 更新平台分布
+        function updatePlatformDistribution() {
+            // 比赛平台分布
+            const contestPlatforms = {};
+            dashboardData.contests.forEach(contest => {
+                contestPlatforms[contest.platform] = (contestPlatforms[contest.platform] || 0) + 1;
+            });
+
+            const contestPlatformsContainer = document.getElementById('contest-platforms');
+            if (Object.keys(contestPlatforms).length === 0) {
+                contestPlatformsContainer.innerHTML = '<div class="text-center text-gray-500 p-4">暂无数据</div>';
+            } else {
+                const sortedPlatforms = Object.entries(contestPlatforms)
+                    .sort(([,a], [,b]) => b - a);
+                
+                contestPlatformsContainer.innerHTML = sortedPlatforms.map(([platform, count]) => `
+                    <div class="flex justify-between items-center p-2 border-b border-gray-200">
+                        <span class="tag">${platform}</span>
+                        <span class="font-weight-500">${count}</span>
+                    </div>
+                `).join('');
+            }
+
+            // 题目标签分布
+            const tagCounts = {};
+            dashboardData.problems.forEach(problem => {
+                (problem.tags || []).forEach(tag => {
+                    tagCounts[tag] = (tagCounts[tag] || 0) + 1;
+                });
+            });
+
+            const problemTagsContainer = document.getElementById('problem-tags');
+            if (Object.keys(tagCounts).length === 0) {
+                problemTagsContainer.innerHTML = '<div class="text-center text-gray-500 p-4">暂无数据</div>';
+            } else {
+                const sortedTags = Object.entries(tagCounts)
+                    .sort(([,a], [,b]) => b - a)
+                    .slice(0, 8);
+                
+                problemTagsContainer.innerHTML = sortedTags.map(([tag, count]) => `
+                    <div class="flex justify-between items-center p-2 border-b border-gray-200">
+                        <span class="tag tag-${getTagClass(tag)}">${tag}</span>
+                        <span class="font-weight-500">${count}</span>
+                    </div>
+                `).join('');
+            }
+        }
+
+        // 更新推荐
+        function updateRecommendations() {
+            const recommendations = [];
+            
+            // 基于数据生成推荐
+            const totalContests = dashboardData.contests.length;
+            const totalProblems = dashboardData.problems.length;
+            const solvedProblems = dashboardData.problems.filter(p => p.status === 'solved').length;
+
+            if (totalContests === 0) {
+                recommendations.push({
+                    type: 'action',
+                    title: '记录第一场比赛',
+                    desc: '开始记录你的比赛历程，跟踪进步过程',
+                    action: 'contests.html',
+                    actionText: '添加比赛'
+                });
+            }
+
+            if (totalProblems === 0) {
+                recommendations.push({
+                    type: 'action', 
+                    title: '开始刷题之旅',
+                    desc: '记录你的每一道题目，建立个人题库',
+                    action: 'problems.html',
+                    actionText: '添加题目'
+                });
+            }
+
+            if (totalProblems > 0 && solvedProblems < totalProblems * 0.5) {
+                recommendations.push({
+                    type: 'goal',
+                    title: '提高解题率',
+                    desc: `当前解题率 ${Math.round(solvedProblems/totalProblems*100)}%，建议多练习基础题目`,
+                    action: 'problems.html',
+                    actionText: '查看题目'
+                });
+            }
+
+            if (totalContests >= 5 && !hasRecentActivity()) {
+                recommendations.push({
+                    type: 'reminder',
+                    title: '保持练习节奏',
+                    desc: '最近没有新的活动记录，建议保持定期练习',
+                    action: 'contests.html',
+                    actionText: '查看比赛'
+                });
+            }
+
+            const container = document.getElementById('recommendations');
+            if (recommendations.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center text-gray-500">
+                        <p>太棒了！继续保持学习和练习的节奏</p>
+                        <p class="text-sm mt-2">建议定期参加比赛并记录题目练习情况</p>
+                    </div>
+                `;
+            } else {
+                container.innerHTML = recommendations.map(rec => `
+                    <div class="p-3 border border-gray-200 rounded mb-3">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <h4 class="font-weight-600 mb-1">${rec.title}</h4>
+                                <p class="text-gray-600 text-sm">${rec.desc}</p>
+                            </div>
+                            <a href="${rec.action}" class="btn btn-sm btn-outline">${rec.actionText}</a>
+                        </div>
+                    </div>
+                `).join('');
+            }
+        }
+
+        // 计算活跃天数
+        function calculateActiveDays() {
+            const dates = new Set();
+            
+            // 添加比赛日期
+            dashboardData.contests.forEach(contest => {
+                dates.add(contest.date.split('T')[0]);
+            });
+            
+            // 添加解题日期
+            dashboardData.problems.forEach(problem => {
+                if (problem.solvedTime) {
+                    dates.add(problem.solvedTime.split('T')[0]);
+                }
+                if (problem.addedTime) {
+                    dates.add(problem.addedTime.split('T')[0]);
+                }
+            });
+            
+            return dates.size;
+        }
+
+        // 检查是否有最近活动
+        function hasRecentActivity() {
+            const twoWeeksAgo = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000);
+            
+            // 检查最近的比赛
+            const recentContests = dashboardData.contests.some(contest => 
+                new Date(contest.date) >= twoWeeksAgo
+            );
+            
+            // 检查最近解决的题目
+            const recentProblems = dashboardData.problems.some(problem => 
+                problem.solvedTime && new Date(problem.solvedTime) >= twoWeeksAgo
+            );
+            
+            return recentContests || recentProblems;
+        }
+
+        // 显示系统信息
+        function showAppInfo() {
+            const app = window.ACMTransit;
+            if (!app) {
+                alert('应用程序未初始化');
+                return;
+            }
+
+            const info = app.getAppInfo();
+            const content = document.getElementById('app-info-content');
+            
+            content.innerHTML = `
+                <div class="space-y-4">
+                    <div>
+                        <h4 class="font-weight-600">应用信息</h4>
+                        <p>名称: ${info.name}</p>
+                        <p>版本: ${info.version}</p>
+                        <p>当前页面: ${info.currentPage}</p>
+                        <p>初始化状态: ${info.initialized ? '已完成' : '进行中'}</p>
+                    </div>
+                    <div>
+                        <h4 class="font-weight-600">功能支持</h4>
+                        <p>本地存储: ${info.features.localStorage ? '✅ 支持' : '❌ 不支持'}</p>
+                        <p>文件系统访问: ${info.features.fileSystemAccess ? '✅ 支持' : '❌ 不支持'}</p>
+                        <p>网络状态: ${info.features.offline ? '🔴 离线' : '🟢 在线'}</p>
+                    </div>
+                    <div>
+                        <h4 class="font-weight-600">管理器状态</h4>
+                        <p>存储管理器: ${info.managers.storage ? '✅ 已加载' : '❌ 未加载'}</p>
+                        <p>比赛管理器: ${info.managers.contests ? '✅ 已加载' : '❌ 未加载'}</p>
+                        <p>题目管理器: ${info.managers.problems ? '✅ 已加载' : '❌ 未加载'}</p>
+                    </div>
+                    <div>
+                        <h4 class="font-weight-600">数据统计</h4>
+                        <p>比赛记录: ${dashboardData.contests.length} 条</p>
+                        <p>题目记录: ${dashboardData.problems.length} 条</p>
+                        <p>上次更新: ${dashboardData.lastUpdate ? new Date(dashboardData.lastUpdate).toLocaleString('zh-CN') : '未知'}</p>
+                    </div>
+                </div>
+            `;
+            
+            document.getElementById('app-info-modal').classList.add('show');
+        }
+
+        // 关闭系统信息模态框
+        function closeAppInfoModal() {
+            document.getElementById('app-info-modal').classList.remove('show');
+        }
+
+        // 同步所有数据
+        async function syncAllData() {
+            const app = window.ACMTransit;
+            if (app && app.syncData) {
+                await app.syncData();
+                loadDashboardData();
+            }
+        }
+
+        // 导出所有数据
+        async function exportAllData() {
+            try {
+                const app = window.ACMTransit;
+                if (!app || !app.storage) {
+                    throw new Error('存储管理器未初始化');
+                }
+
+                const allData = {
+                    contests: dashboardData.contests,
+                    problems: dashboardData.problems,
+                    exportTime: new Date().toISOString(),
+                    version: '1.0'
+                };
+
+                const success = await app.storage.exportData(allData, `acm-transit-backup-${formatDateString()}.json`);
+                if (success) {
+                    showNotification('数据导出成功', 'success');
+                }
+            } catch (error) {
+                showNotification('导出失败: ' + error.message, 'error');
+            }
+        }
+
+        // 导入数据
+        async function importAllData() {
+            try {
+                const app = window.ACMTransit;
+                if (!app || !app.storage) {
+                    throw new Error('存储管理器未初始化');
+                }
+
+                const data = await app.storage.importData();
+                if (data) {
+                    // 这里可以进一步处理导入的数据
+                    showNotification('数据导入成功', 'success');
+                    loadDashboardData();
+                }
+            } catch (error) {
+                showNotification('导入失败: ' + error.message, 'error');
+            }
+        }
+
+        // 刷新数据
+        function refreshData() {
+            loadDashboardData();
+            showNotification('数据已刷新', 'success');
+        }
+
+        // 工具函数
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function formatDate(dateString) {
+            try {
+                return new Date(dateString).toLocaleDateString('zh-CN');
+            } catch {
+                return dateString;
+            }
+        }
+
+        function formatDateString() {
+            return new Date().toISOString().split('T')[0];
+        }
+
+        function getTagClass(tag) {
+            const tagClasses = {
+                'dp': 'dp',
+                'greedy': 'greedy', 
+                'graph': 'graph',
+                'math': 'math',
+                'string': 'string'
+            };
+            return tagClasses[tag] || 'default';
+        }
+
+        function showNotification(message, type = 'info') {
+            const app = window.ACMTransit;
+            if (app && app.showGlobalMessage) {
+                app.showGlobalMessage(message, type);
+            } else {
+                console.log(`[${type.toUpperCase()}] ${message}`);
+            }
+        }
+
+        // 模态框点击外部关闭
+        document.getElementById('app-info-modal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeAppInfoModal();
+            }
+        });
+    </script>
+</body>
+</html>

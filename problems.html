@@ -1,0 +1,808 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>题目管理 - ACM中转站</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <!-- 导航栏 -->
+    <nav class="navbar">
+        <div class="container">
+            <a href="index.html" class="navbar-brand">ACM中转站</a>
+            <ul class="navbar-nav">
+                <li><a href="index.html">仪表板</a></li>
+                <li><a href="contests.html">比赛管理</a></li>
+                <li><a href="problems.html" class="active">题目管理</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- 主要内容区域 -->
+    <div class="main-content">
+        <!-- 页面标题 -->
+        <div class="page-header">
+            <h1 class="page-title">题目管理</h1>
+            <p class="page-subtitle">记录和追踪你的题目练习进度</p>
+        </div>
+
+        <!-- 快速统计 -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-value" id="total-problems">0</div>
+                <div class="stat-label">总题目数</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="solved-problems">0</div>
+                <div class="stat-label">已解决</div>
+                <div class="stat-change" id="solve-rate">0%</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="platform-count">0</div>
+                <div class="stat-label">使用平台</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="tag-count">0</div>
+                <div class="stat-label">标签种类</div>
+            </div>
+        </div>
+
+        <!-- 添加题目表单 -->
+        <div class="card">
+            <div class="card-header">
+                <h2 class="card-title">添加新题目</h2>
+                <div class="card-actions">
+                    <button class="btn btn-outline btn-sm" onclick="resetForm()">重置表单</button>
+                    <button class="btn btn-secondary btn-sm" onclick="importProblems()">导入数据</button>
+                    <button class="btn btn-primary btn-sm" onclick="exportProblems()">导出数据</button>
+                </div>
+            </div>
+            <div class="form-container">
+                <form id="problem-form" onsubmit="handleSubmitProblem(event)">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label class="form-label" for="problem-title">题目标题 *</label>
+                            <input type="text" id="problem-title" class="form-control" placeholder="输入题目标题" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="problem-platform">题目平台 *</label>
+                            <select id="problem-platform" class="form-control" required>
+                                <option value="">选择平台</option>
+                                <option value="Codeforces">Codeforces</option>
+                                <option value="AtCoder">AtCoder</option>
+                                <option value="CodeChef">CodeChef</option>
+                                <option value="LeetCode">LeetCode</option>
+                                <option value="HDU">HDU</option>
+                                <option value="POJ">POJ</option>
+                                <option value="UVA">UVA</option>
+                                <option value="自定义">自定义</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="problem-difficulty">难度值</label>
+                            <input type="number" id="problem-difficulty" class="form-control" placeholder="如: 1200" min="800" max="3500">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="problem-status">状态</label>
+                            <select id="problem-status" class="form-control">
+                                <option value="unsolved">❌ 未解决</option>
+                                <option value="solved">✅ 已解决</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label class="form-label" for="problem-index">题目编号</label>
+                            <input type="text" id="problem-index" class="form-control" placeholder="如: A, B1, Div2C">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="problem-contest">所属比赛</label>
+                            <select id="problem-contest" class="form-control">
+                                <option value="">选择比赛</option>
+                                <!-- 动态加载比赛选项 -->
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label class="form-label" for="problem-url">题目链接</label>
+                            <input type="url" id="problem-url" class="form-control" placeholder="https://...">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="problem-pdf">题目PDF路径</label>
+                            <input type="text" id="problem-pdf" class="form-control" placeholder="./files/contest-pdfs/cf-900/A.pdf">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="problem-solution">题解路径</label>
+                        <input type="text" id="problem-solution" class="form-control" placeholder="./files/summaries/solutions/cf-900-A.md">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="problem-tags-input">标签</label>
+                        <input type="text" id="problem-tags-input" class="form-control" placeholder="输入标签，用逗号分隔，如: dp, graph, math" onkeydown="handleTagKeydown(event)" onblur="addTagsFromInput()">
+                        <div class="text-sm text-gray-500 mt-1">常用标签: dp, greedy, graph, math, string, implementation, brute-force</div>
+                        <div id="selected-tags" class="tags-container mt-2"></div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="problem-notes">备注</label>
+                        <textarea id="problem-notes" class="form-control" placeholder="解题思路、易错点、相关知识点等"></textarea>
+                    </div>
+                    <div class="btn-group">
+                        <button type="submit" class="btn btn-primary">添加题目</button>
+                        <button type="button" class="btn btn-outline" onclick="resetForm()">清空</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- 搜索和筛选 -->
+        <div class="search-bar">
+            <div class="search-grid">
+                <div class="search-input">
+                    <input type="text" id="search-query" class="form-control" placeholder="搜索题目标题、标签..." onkeyup="handleSearch()">
+                </div>
+                <div class="form-group">
+                    <select id="filter-platform" class="form-control" onchange="handleSearch()">
+                        <option value="">所有平台</option>
+                        <option value="Codeforces">Codeforces</option>
+                        <option value="AtCoder">AtCoder</option>
+                        <option value="CodeChef">CodeChef</option>
+                        <option value="LeetCode">LeetCode</option>
+                        <option value="HDU">HDU</option>
+                        <option value="POJ">POJ</option>
+                        <option value="UVA">UVA</option>
+                        <option value="自定义">自定义</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <select id="filter-status" class="form-control" onchange="handleSearch()">
+                        <option value="">所有状态</option>
+                        <option value="solved">✅ 已解决</option>
+                        <option value="unsolved">❌ 未解决</option>
+                    </select>
+                </div>
+                <button class="btn btn-outline btn-sm" onclick="clearFilters()">清空筛选</button>
+            </div>
+            <div class="search-grid mt-2">
+                <div class="form-group">
+                    <label class="form-label">难度范围</label>
+                    <div class="flex gap-2">
+                        <input type="number" id="min-difficulty" class="form-control" placeholder="最低" min="800" max="3500" onchange="handleSearch()">
+                        <input type="number" id="max-difficulty" class="form-control" placeholder="最高" min="800" max="3500" onchange="handleSearch()">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">标签筛选</label>
+                    <select id="filter-tags" class="form-control" onchange="handleSearch()">
+                        <option value="">选择标签</option>
+                        <!-- 动态加载标签选项 -->
+                    </select>
+                </div>
+                <div class="form-group">
+                    <select id="sort-by" class="form-control" onchange="handleSort()">
+                        <option value="addedTime">按添加时间排序</option>
+                        <option value="title">按题目标题排序</option>
+                        <option value="difficulty">按难度排序</option>
+                        <option value="platform">按平台排序</option>
+                        <option value="status">按状态排序</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <!-- 题目列表 -->
+        <div class="table-container">
+            <div class="table-header">
+                <h3>题目记录</h3>
+                <div class="btn-group">
+                    <span id="problem-count" class="text-gray-500">共 0 道题目</span>
+                    <button class="btn btn-sm btn-outline" onclick="refreshData()">刷新</button>
+                </div>
+            </div>
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th class="sortable" onclick="handleTableSort('title')">题目标题</th>
+                        <th class="sortable" onclick="handleTableSort('platform')">平台</th>
+                        <th class="sortable" onclick="handleTableSort('difficulty')">难度</th>
+                        <th class="sortable" onclick="handleTableSort('status')">状态</th>
+                        <th>标签</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody id="problems-table-body">
+                    <!-- 动态加载题目数据 -->
+                </tbody>
+            </table>
+            <div id="no-problems" class="text-center p-4 hidden">
+                <p class="text-gray-500">暂无题目记录</p>
+                <p class="text-gray-500">使用上面的表单添加你的第一道题目吧！</p>
+            </div>
+        </div>
+
+        <!-- 分页 -->
+        <div id="pagination" class="pagination hidden">
+            <button class="pagination-btn" id="prev-btn" onclick="changePage(-1)" disabled>上一页</button>
+            <span class="pagination-info">第 <span id="current-page">1</span> 页，共 <span id="total-pages">1</span> 页</span>
+            <button class="pagination-btn" id="next-btn" onclick="changePage(1)" disabled>下一页</button>
+        </div>
+    </div>
+
+    <!-- 编辑题目模态框 -->
+    <div id="edit-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">编辑题目</h3>
+                <button class="modal-close" onclick="closeEditModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="edit-problem-form" onsubmit="handleUpdateProblem(event)">
+                    <input type="hidden" id="edit-problem-id">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label class="form-label" for="edit-problem-title">题目标题 *</label>
+                            <input type="text" id="edit-problem-title" class="form-control" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="edit-problem-platform">题目平台 *</label>
+                            <select id="edit-problem-platform" class="form-control" required>
+                                <option value="Codeforces">Codeforces</option>
+                                <option value="AtCoder">AtCoder</option>
+                                <option value="CodeChef">CodeChef</option>
+                                <option value="LeetCode">LeetCode</option>
+                                <option value="HDU">HDU</option>
+                                <option value="POJ">POJ</option>
+                                <option value="UVA">UVA</option>
+                                <option value="自定义">自定义</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="edit-problem-difficulty">难度值</label>
+                            <input type="number" id="edit-problem-difficulty" class="form-control" min="800" max="3500">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="edit-problem-status">状态</label>
+                            <select id="edit-problem-status" class="form-control">
+                                <option value="unsolved">❌ 未解决</option>
+                                <option value="solved">✅ 已解决</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="edit-problem-tags-input">标签</label>
+                        <input type="text" id="edit-problem-tags-input" class="form-control" placeholder="输入标签，用逗号分隔" onkeydown="handleEditTagKeydown(event)" onblur="addEditTagsFromInput()">
+                        <div id="edit-selected-tags" class="tags-container mt-2"></div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="edit-problem-notes">备注</label>
+                        <textarea id="edit-problem-notes" class="form-control"></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline" onclick="closeEditModal()">取消</button>
+                <button type="submit" form="edit-problem-form" class="btn btn-primary">保存修改</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 加载 JavaScript -->
+    <script src="js/storage.js"></script>
+    <script src="js/problems.js"></script>
+    
+    <script>
+        // 全局变量
+        let storage, problemManager;
+        let currentProblems = [];
+        let currentPage = 1;
+        const itemsPerPage = 15;
+        let currentSort = { field: 'addedTime', order: 'desc' };
+        let selectedTags = [];
+        let editSelectedTags = [];
+        let allTags = [];
+
+        // 页面初始化
+        document.addEventListener('DOMContentLoaded', async function() {
+            try {
+                // 初始化存储和管理器
+                storage = new DataStorage();
+                problemManager = new ProblemManager(storage);
+
+                // 等待初始化完成
+                await new Promise(resolve => {
+                    if (problemManager.initialized) {
+                        resolve();
+                    } else {
+                        problemManager.on('initialized', resolve);
+                    }
+                });
+
+                // 设置事件监听器
+                setupEventListeners();
+                
+                // 加载数据
+                await loadData();
+                
+                console.log('题目管理页面初始化完成');
+            } catch (error) {
+                console.error('页面初始化失败:', error);
+                showNotification('页面初始化失败: ' + error.message, 'error');
+            }
+        });
+
+        // 设置事件监听器
+        function setupEventListeners() {
+            problemManager.on('problemAdded', () => {
+                loadData();
+                showNotification('题目添加成功', 'success');
+            });
+
+            problemManager.on('problemUpdated', () => {
+                loadData();
+                showNotification('题目更新成功', 'success');
+            });
+
+            problemManager.on('problemDeleted', () => {
+                loadData();
+                showNotification('题目删除成功', 'success');
+            });
+
+            // 模态框点击外部关闭
+            document.getElementById('edit-modal').addEventListener('click', function(e) {
+                if (e.target === this) closeEditModal();
+            });
+        }
+
+        // 加载数据并更新UI
+        async function loadData() {
+            try {
+                currentProblems = problemManager.getAllProblems();
+                allTags = problemManager.getAllTags();
+                updateStatistics();
+                updateTagFilters();
+                renderTable();
+            } catch (error) {
+                console.error('加载数据失败:', error);
+                showNotification('加载数据失败: ' + error.message, 'error');
+            }
+        }
+
+        // 更新统计信息
+        function updateStatistics() {
+            const stats = problemManager.getStatistics();
+            
+            document.getElementById('total-problems').textContent = stats.total;
+            document.getElementById('solved-problems').textContent = stats.solved;
+            document.getElementById('platform-count').textContent = Object.keys(stats.byPlatform).length;
+            document.getElementById('tag-count').textContent = Object.keys(stats.tagStats).length;
+            
+            // 更新解决率
+            const solveRate = stats.total > 0 ? Math.round((stats.solved / stats.total) * 100) : 0;
+            document.getElementById('solve-rate').textContent = solveRate + '%';
+        }
+
+        // 更新标签筛选选项
+        function updateTagFilters() {
+            const filterTags = document.getElementById('filter-tags');
+            filterTags.innerHTML = '<option value="">选择标签</option>' + 
+                allTags.map(tag => `<option value="${tag}">${tag}</option>`).join('');
+        }
+
+        // 处理标签输入
+        function handleTagKeydown(event) {
+            if (event.key === 'Enter' || event.key === ',') {
+                event.preventDefault();
+                addTagsFromInput();
+            }
+        }
+
+        // 从输入框添加标签
+        function addTagsFromInput() {
+            const input = document.getElementById('problem-tags-input');
+            const inputValue = input.value.trim();
+            
+            if (inputValue) {
+                const newTags = inputValue.split(/[,，\s]+/).map(tag => tag.trim().toLowerCase()).filter(tag => tag);
+                newTags.forEach(tag => {
+                    if (tag && !selectedTags.includes(tag) && selectedTags.length < 10) {
+                        selectedTags.push(tag);
+                    }
+                });
+                input.value = '';
+                updateSelectedTags();
+            }
+        }
+
+        // 更新已选标签显示
+        function updateSelectedTags() {
+            const container = document.getElementById('selected-tags');
+            container.innerHTML = selectedTags.map(tag => 
+                `<span class="tag tag-${getTagClass(tag)}">${tag} <button type="button" onclick="removeTag('${tag}')" style="margin-left: 5px;">&times;</button></span>`
+            ).join('');
+        }
+
+        // 删除标签
+        function removeTag(tag) {
+            selectedTags = selectedTags.filter(t => t !== tag);
+            updateSelectedTags();
+        }
+
+        // 编辑模式标签处理
+        function handleEditTagKeydown(event) {
+            if (event.key === 'Enter' || event.key === ',') {
+                event.preventDefault();
+                addEditTagsFromInput();
+            }
+        }
+
+        function addEditTagsFromInput() {
+            const input = document.getElementById('edit-problem-tags-input');
+            const inputValue = input.value.trim();
+            
+            if (inputValue) {
+                const newTags = inputValue.split(/[,，\s]+/).map(tag => tag.trim().toLowerCase()).filter(tag => tag);
+                newTags.forEach(tag => {
+                    if (tag && !editSelectedTags.includes(tag) && editSelectedTags.length < 10) {
+                        editSelectedTags.push(tag);
+                    }
+                });
+                input.value = '';
+                updateEditSelectedTags();
+            }
+        }
+
+        function updateEditSelectedTags() {
+            const container = document.getElementById('edit-selected-tags');
+            container.innerHTML = editSelectedTags.map(tag => 
+                `<span class="tag tag-${getTagClass(tag)}">${tag} <button type="button" onclick="removeEditTag('${tag}')" style="margin-left: 5px;">&times;</button></span>`
+            ).join('');
+        }
+
+        function removeEditTag(tag) {
+            editSelectedTags = editSelectedTags.filter(t => t !== tag);
+            updateEditSelectedTags();
+        }
+
+        // 渲染题目表格
+        function renderTable() {
+            const tbody = document.getElementById('problems-table-body');
+            const noProblems = document.getElementById('no-problems');
+            
+            if (currentProblems.length === 0) {
+                tbody.innerHTML = '';
+                noProblems.classList.remove('hidden');
+                document.getElementById('problem-count').textContent = '共 0 道题目';
+                return;
+            }
+
+            noProblems.classList.add('hidden');
+            document.getElementById('problem-count').textContent = `共 ${currentProblems.length} 道题目`;
+
+            // 分页
+            const startIndex = (currentPage - 1) * itemsPerPage;
+            const endIndex = startIndex + itemsPerPage;
+            const pageProblems = currentProblems.slice(startIndex, endIndex);
+
+            tbody.innerHTML = pageProblems.map(problem => `
+                <tr>
+                    <td>
+                        <div class="font-weight-500">${escapeHtml(problem.title)}</div>
+                        ${problem.problemIndex ? `<div class="text-gray-500 text-sm">${escapeHtml(problem.problemIndex)}</div>` : ''}
+                    </td>
+                    <td>
+                        <span class="tag">${escapeHtml(problem.platform)}</span>
+                    </td>
+                    <td>
+                        ${problem.difficulty ? 
+                            `<span class="difficulty-indicator difficulty-${Math.floor(problem.difficulty/200)*200}">${problem.difficulty}</span>` : 
+                            '-'}
+                    </td>
+                    <td>
+                        ${problem.status === 'solved' ? 
+                            '<span class="status-badge status-solved">✅ 已解决</span>' : 
+                            '<span class="status-badge status-todo">❌ 未解决</span>'}
+                    </td>
+                    <td>
+                        <div class="tags-container">
+                            ${(problem.tags || []).slice(0, 3).map(tag => 
+                                `<span class="tag tag-${getTagClass(tag)}">${escapeHtml(tag)}</span>`
+                            ).join('')}
+                            ${problem.tags && problem.tags.length > 3 ? 
+                                `<span class="tag">+${problem.tags.length - 3}</span>` : ''}
+                        </div>
+                    </td>
+                    <td>
+                        <div class="table-actions">
+                            <button class="btn btn-sm btn-outline" onclick="editProblem('${problem.id}')">编辑</button>
+                            ${problem.status !== 'solved' ? 
+                                `<button class="btn btn-sm btn-success" onclick="markAsSolved('${problem.id}')">✅</button>` :
+                                `<button class="btn btn-sm btn-secondary" onclick="markAsUnsolved('${problem.id}')">❌</button>`
+                            }
+                            <button class="btn btn-sm btn-danger" onclick="deleteProblem('${problem.id}')">删除</button>
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+
+            updatePagination();
+        }
+
+        // 更新分页
+        function updatePagination() {
+            const totalPages = Math.ceil(currentProblems.length / itemsPerPage);
+            const pagination = document.getElementById('pagination');
+            
+            if (totalPages <= 1) {
+                pagination.classList.add('hidden');
+                return;
+            }
+
+            pagination.classList.remove('hidden');
+            document.getElementById('current-page').textContent = currentPage;
+            document.getElementById('total-pages').textContent = totalPages;
+            
+            document.getElementById('prev-btn').disabled = currentPage <= 1;
+            document.getElementById('next-btn').disabled = currentPage >= totalPages;
+        }
+
+        // 翻页
+        function changePage(delta) {
+            const totalPages = Math.ceil(currentProblems.length / itemsPerPage);
+            const newPage = currentPage + delta;
+            
+            if (newPage >= 1 && newPage <= totalPages) {
+                currentPage = newPage;
+                renderTable();
+            }
+        }
+
+        // 处理题目提交
+        function handleSubmitProblem(event) {
+            event.preventDefault();
+            
+            try {
+                const formData = {
+                    title: document.getElementById('problem-title').value,
+                    platform: document.getElementById('problem-platform').value,
+                    difficulty: document.getElementById('problem-difficulty').value,
+                    status: document.getElementById('problem-status').value,
+                    problemIndex: document.getElementById('problem-index').value,
+                    url: document.getElementById('problem-url').value,
+                    contestId: document.getElementById('problem-contest').value,
+                    pdfPath: document.getElementById('problem-pdf').value,
+                    solutionPath: document.getElementById('problem-solution').value,
+                    tags: selectedTags,
+                    notes: document.getElementById('problem-notes').value
+                };
+
+                problemManager.addProblem(formData);
+                resetForm();
+                
+            } catch (error) {
+                showNotification('添加题目失败: ' + error.message, 'error');
+            }
+        }
+
+        // 重置表单
+        function resetForm() {
+            document.getElementById('problem-form').reset();
+            selectedTags = [];
+            updateSelectedTags();
+            document.getElementById('problem-status').value = 'unsolved';
+        }
+
+        // 搜索处理
+        function handleSearch() {
+            const query = document.getElementById('search-query').value;
+            const platform = document.getElementById('filter-platform').value;
+            const status = document.getElementById('filter-status').value;
+            const selectedTag = document.getElementById('filter-tags').value;
+            const minDifficulty = document.getElementById('min-difficulty').value;
+            const maxDifficulty = document.getElementById('max-difficulty').value;
+            
+            const criteria = {};
+            if (query) criteria.search = query;
+            if (platform) criteria.platform = platform;
+            if (status) criteria.status = status;
+            if (selectedTag) criteria.tags = [selectedTag];
+            if (minDifficulty) criteria.minDifficulty = parseInt(minDifficulty);
+            if (maxDifficulty) criteria.maxDifficulty = parseInt(maxDifficulty);
+            
+            currentProblems = problemManager.filterProblems(criteria);
+            applySorting();
+            currentPage = 1;
+            renderTable();
+        }
+
+        // 排序处理
+        function handleSort() {
+            const sortBy = document.getElementById('sort-by').value;
+            currentSort.field = sortBy;
+            applySorting();
+            renderTable();
+        }
+
+        // 表格排序
+        function handleTableSort(field) {
+            if (currentSort.field === field) {
+                currentSort.order = currentSort.order === 'asc' ? 'desc' : 'asc';
+            } else {
+                currentSort.field = field;
+                currentSort.order = 'desc';
+            }
+            
+            applySorting();
+            renderTable();
+        }
+
+        // 应用排序
+        function applySorting() {
+            currentProblems = problemManager.sortProblems(currentSort.field, currentSort.order);
+        }
+
+        // 清空筛选
+        function clearFilters() {
+            document.getElementById('search-query').value = '';
+            document.getElementById('filter-platform').value = '';
+            document.getElementById('filter-status').value = '';
+            document.getElementById('filter-tags').value = '';
+            document.getElementById('min-difficulty').value = '';
+            document.getElementById('max-difficulty').value = '';
+            document.getElementById('sort-by').value = 'addedTime';
+            
+            currentProblems = problemManager.getAllProblems();
+            currentSort = { field: 'addedTime', order: 'desc' };
+            applySorting();
+            currentPage = 1;
+            renderTable();
+        }
+
+        // 编辑题目
+        function editProblem(id) {
+            const problem = problemManager.findProblemById(id);
+            if (!problem) {
+                showNotification('找不到指定的题目记录', 'error');
+                return;
+            }
+
+            // 填充编辑表单
+            document.getElementById('edit-problem-id').value = problem.id;
+            document.getElementById('edit-problem-title').value = problem.title;
+            document.getElementById('edit-problem-platform').value = problem.platform;
+            document.getElementById('edit-problem-difficulty').value = problem.difficulty || '';
+            document.getElementById('edit-problem-status').value = problem.status;
+            document.getElementById('edit-problem-notes').value = problem.notes || '';
+
+            // 设置编辑标签
+            editSelectedTags = [...(problem.tags || [])];
+            updateEditSelectedTags();
+
+            document.getElementById('edit-modal').classList.add('show');
+        }
+
+        // 处理题目更新
+        function handleUpdateProblem(event) {
+            event.preventDefault();
+            
+            try {
+                const id = document.getElementById('edit-problem-id').value;
+                const updates = {
+                    title: document.getElementById('edit-problem-title').value,
+                    platform: document.getElementById('edit-problem-platform').value,
+                    difficulty: document.getElementById('edit-problem-difficulty').value,
+                    status: document.getElementById('edit-problem-status').value,
+                    tags: editSelectedTags,
+                    notes: document.getElementById('edit-problem-notes').value
+                };
+
+                problemManager.updateProblem(id, updates);
+                closeEditModal();
+                
+            } catch (error) {
+                showNotification('更新题目失败: ' + error.message, 'error');
+            }
+        }
+
+        // 关闭编辑模态框
+        function closeEditModal() {
+            document.getElementById('edit-modal').classList.remove('show');
+            editSelectedTags = [];
+        }
+
+        // 标记为已解决
+        function markAsSolved(id) {
+            try {
+                problemManager.updateProblem(id, { status: 'solved' });
+            } catch (error) {
+                showNotification('更新失败: ' + error.message, 'error');
+            }
+        }
+
+        // 标记为未解决
+        function markAsUnsolved(id) {
+            try {
+                problemManager.updateProblem(id, { status: 'unsolved' });
+            } catch (error) {
+                showNotification('更新失败: ' + error.message, 'error');
+            }
+        }
+
+        // 删除题目
+        function deleteProblem(id) {
+            const problem = problemManager.findProblemById(id);
+            if (!problem) return;
+
+            if (confirm(`确定要删除题目 "${problem.title}" 吗？此操作不可撤销。`)) {
+                try {
+                    problemManager.deleteProblem(id);
+                } catch (error) {
+                    showNotification('删除题目失败: ' + error.message, 'error');
+                }
+            }
+        }
+
+        // 导出题目数据
+        async function exportProblems() {
+            try {
+                const success = await problemManager.exportProblems('problems-export.json');
+                if (success) {
+                    showNotification('题目数据导出成功', 'success');
+                }
+            } catch (error) {
+                showNotification('导出失败: ' + error.message, 'error');
+            }
+        }
+
+        // 导入题目数据
+        async function importProblems() {
+            try {
+                const data = await storage.importData();
+                if (data) {
+                    const result = await problemManager.importProblems(data);
+                    showNotification(`导入成功：新增 ${result.addedCount} 道题目`, 'success');
+                }
+            } catch (error) {
+                showNotification('导入失败: ' + error.message, 'error');
+            }
+        }
+
+        // 刷新数据
+        async function refreshData() {
+            try {
+                await problemManager.reloadData();
+                await loadData();
+                showNotification('数据刷新成功', 'success');
+            } catch (error) {
+                showNotification('刷新失败: ' + error.message, 'error');
+            }
+        }
+
+        // 工具函数
+        function getTagClass(tag) {
+            const tagClasses = {
+                'dp': 'dp',
+                'greedy': 'greedy', 
+                'graph': 'graph',
+                'math': 'math',
+                'string': 'string'
+            };
+            return tagClasses[tag] || 'default';
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function showNotification(message, type = 'info') {
+            if (storage && storage.showNotification) {
+                storage.showNotification(message, type);
+            } else {
+                console.log(`[${type.toUpperCase()}] ${message}`);
+            }
+        }
+    </script>
+</body>
+</html>
