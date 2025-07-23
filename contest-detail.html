@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>比赛详情 - ACM中转站</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <!-- 导航栏 -->
+    <nav class="navbar">
+        <div class="container">
+            <a href="index.html" class="navbar-brand">ACM中转站</a>
+            <ul class="navbar-nav">
+                <li><a href="index.html">仪表板</a></li>
+                <li><a href="contests.html">比赛管理</a></li>
+                <li><a href="problems.html">题目管理</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- 主要内容区域 -->
+    <div class="main-content">
+        <!-- 返回按钮 -->
+        <div class="page-header">
+            <div class="flex items-center gap-3">
+                <button class="btn btn-outline btn-sm" onclick="goBack()">← 返回比赛列表</button>
+                <div>
+                    <h1 class="page-title" id="contest-name">比赛详情</h1>
+                    <p class="page-subtitle" id="contest-info">加载中...</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 比赛基本信息 -->
+        <div class="card" id="contest-details">
+            <div class="card-header">
+                <h2 class="card-title">比赛信息</h2>
+                <div class="card-actions">
+                    <button class="btn btn-outline btn-sm" onclick="editContest()">编辑比赛</button>
+                    <button class="btn btn-primary btn-sm" onclick="downloadSummary()">生成总结模板</button>
+                </div>
+            </div>
+            <div class="form-container">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label class="form-label">比赛平台</label>
+                        <div class="form-value" id="contest-platform">-</div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">比赛日期</label>
+                        <div class="form-value" id="contest-date">-</div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">最终排名</label>
+                        <div class="form-value" id="contest-rank">-</div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">解题情况</label>
+                        <div class="form-value" id="contest-solve-count">0/0</div>
+                    </div>
+                </div>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label class="form-label">比赛链接</label>
+                        <div class="form-value" id="contest-url-display">
+                            <a href="#" id="contest-url-link" target="_blank" style="display: none;">打开比赛页面</a>
+                            <span id="contest-url-empty">无</span>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">比赛PDF</label>
+                        <div class="form-value" id="contest-pdf-display">
+                            <a href="#" id="contest-pdf-link" target="_blank" style="display: none;">查看PDF</a>
+                            <span id="contest-pdf-empty">无</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group" id="contest-notes-section" style="display: none;">
+                    <label class="form-label">备注</label>
+                    <div class="form-value" id="contest-notes-display"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 题目列表 -->
+        <div class="card">
+            <div class="card-header">
+                <h2 class="card-title">题目列表</h2>
+                <div class="card-actions">
+                    <span id="problems-count" class="text-gray-500">共 0 道题目</span>
+                    <button class="btn btn-outline btn-sm" onclick="addProblem()">添加题目</button>
+                </div>
+            </div>
+            
+            <!-- 题目网格 -->
+            <div class="problems-grid" id="problems-grid">
+                <!-- 动态加载题目 -->
+            </div>
+            
+            <!-- 空状态 -->
+            <div id="no-problems" class="text-center p-4" style="display: none;">
+                <p class="text-gray-500">暂无题目</p>
+                <p class="text-gray-500">点击"添加题目"按钮开始添加题目</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- 编辑题目模态框 -->
+    <div id="edit-problem-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">编辑题目</h3>
+                <button class="modal-close" onclick="closeEditProblemModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="edit-problem-form" onsubmit="handleUpdateProblem(event)">
+                    <input type="hidden" id="edit-problem-index">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label class="form-label">题目编号</label>
+                            <input type="text" id="edit-problem-letter" class="form-control" readonly>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">题目标题</label>
+                            <input type="text" id="edit-problem-title" class="form-control" placeholder="输入题目标题">
+                        </div>
+                    </div>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label class="form-label">状态</label>
+                            <select id="edit-problem-status" class="form-control">
+                                <option value="unsolved">❌ 未解决</option>
+                                <option value="solved">✅ 已解决</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">题目PDF路径</label>
+                        <input type="text" id="edit-problem-pdf" class="form-control" placeholder="./files/contest-pdfs/cf-900/A.pdf">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">题解路径</label>
+                        <input type="text" id="edit-problem-solution" class="form-control" placeholder="./files/solutions/cf-900-A.md">
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline" onclick="closeEditProblemModal()">取消</button>
+                <button type="submit" form="edit-problem-form" class="btn btn-primary">保存修改</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 加载 JavaScript -->
+    <script src="js/storage.js"></script>
+    <script src="js/contests.js"></script>
+    
+    <script>
+        // 全局变量
+        let storage, contestManager;
+        let currentContest = null;
+        let contestId = null;
+
+        // 从URL获取比赛ID
+        function getContestIdFromUrl() {
+            const urlParams = new URLSearchParams(window.location.search);
+            return urlParams.get('id');
+        }
+
+        // 页面初始化
+        document.addEventListener('DOMContentLoaded', async function() {
+            try {
+                contestId = getContestIdFromUrl();
+                if (!contestId) {
+                    showNotification('未指定比赛ID', 'error');
+                    goBack();
+                    return;
+                }
+
+                // 初始化存储和管理器
+                storage = new DataStorage();
+                contestManager = new ContestManager(storage);
+
+                // 等待初始化完成
+                await new Promise(resolve => {
+                    if (contestManager.initialized) {
+                        resolve();
+                    } else {
+                        contestManager.on('initialized', resolve);
+                    }
+                });
+
+                // 设置事件监听器
+                setupEventListeners();
+                
+                // 加载比赛数据
+                await loadContestData();
+                
+                console.log('比赛详情页面初始化完成');
+            } catch (error) {
+                console.error('页面初始化失败:', error);
+                showNotification('页面初始化失败: ' + error.message, 'error');
+            }
+        });
+
+        // 设置事件监听器
+        function setupEventListeners() {
+            contestManager.on('contestUpdated', () => {
+                loadContestData();
+                showNotification('比赛更新成功', 'success');
+            });
+
+            contestManager.on('contestProblemUpdated', () => {
+                loadContestData();
+                showNotification('题目更新成功', 'success');
+            });
+
+            // 模态框点击外部关闭
+            document.getElementById('edit-problem-modal').addEventListener('click', function(e) {
+                if (e.target === this) closeEditProblemModal();
+            });
+        }
+
+        // 加载比赛数据
+        async function loadContestData() {
+            try {
+                currentContest = contestManager.findContestById(contestId);
+                if (!currentContest) {
+                    showNotification('找不到指定的比赛', 'error');
+                    goBack();
+                    return;
+                }
+
+                updateContestInfo();
+                renderProblems();
+            } catch (error) {
+                console.error('加载比赛数据失败:', error);
+                showNotification('加载数据失败: ' + error.message, 'error');
+            }
+        }
+
+        // 更新比赛信息显示
+        function updateContestInfo() {
+            document.getElementById('contest-name').textContent = currentContest.name;
+            document.getElementById('contest-info').textContent = 
+                `${currentContest.platform} • ${formatDate(currentContest.date)}`;
+            
+            document.getElementById('contest-platform').textContent = currentContest.platform;
+            document.getElementById('contest-date').textContent = formatDate(currentContest.date);
+            document.getElementById('contest-rank').textContent = currentContest.rank || '无';
+            document.getElementById('contest-solve-count').textContent = 
+                `${currentContest.solved || 0}/${currentContest.totalProblems || 0}`;
+
+            // 比赛链接
+            if (currentContest.url) {
+                document.getElementById('contest-url-link').href = currentContest.url;
+                document.getElementById('contest-url-link').style.display = 'inline';
+                document.getElementById('contest-url-empty').style.display = 'none';
+            } else {
+                document.getElementById('contest-url-link').style.display = 'none';
+                document.getElementById('contest-url-empty').style.display = 'inline';
+            }
+
+            // 比赛PDF
+            if (currentContest.pdfPath) {
+                document.getElementById('contest-pdf-link').href = currentContest.pdfPath;
+                document.getElementById('contest-pdf-link').style.display = 'inline';
+                document.getElementById('contest-pdf-empty').style.display = 'none';
+            } else {
+                document.getElementById('contest-pdf-link').style.display = 'none';
+                document.getElementById('contest-pdf-empty').style.display = 'inline';
+            }
+
+            // 备注
+            if (currentContest.notes) {
+                document.getElementById('contest-notes-display').textContent = currentContest.notes;
+                document.getElementById('contest-notes-section').style.display = 'block';
+            } else {
+                document.getElementById('contest-notes-section').style.display = 'none';
+            }
+        }
+
+        // 渲染题目列表
+        function renderProblems() {
+            const grid = document.getElementById('problems-grid');
+            const noProblems = document.getElementById('no-problems');
+            const problems = currentContest.problems || [];
+            
+            if (problems.length === 0) {
+                grid.innerHTML = '';
+                noProblems.style.display = 'block';
+                document.getElementById('problems-count').textContent = '共 0 道题目';
+                return;
+            }
+
+            noProblems.style.display = 'none';
+            document.getElementById('problems-count').textContent = `共 ${problems.length} 道题目`;
+
+            grid.innerHTML = problems.map((problem, index) => `
+                <div class="problem-card ${problem.status === 'solved' ? 'solved' : 'unsolved'}" onclick="editProblem(${index})">
+                    <div class="problem-header">
+                        <div class="problem-index">${problem.index}</div>
+                        <div class="problem-status">
+                            ${problem.status === 'solved' ? '✅' : '❌'}
+                        </div>
+                    </div>
+                    <div class="problem-title">${problem.title || '未命名题目'}</div>
+                    <div class="problem-links">
+                        ${problem.pdfPath ? 
+                            `<a href="${problem.pdfPath}" target="_blank" class="problem-link" onclick="event.stopPropagation()">PDF</a>` : 
+                            '<span class="problem-link disabled">PDF</span>'}
+                        ${problem.solutionPath ? 
+                            `<a href="${problem.solutionPath}" target="_blank" class="problem-link" onclick="event.stopPropagation()">题解</a>` : 
+                            '<span class="problem-link disabled">题解</span>'}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // 编辑题目
+        function editProblem(index) {
+            const problem = currentContest.problems[index];
+            if (!problem) return;
+
+            document.getElementById('edit-problem-index').value = index;
+            document.getElementById('edit-problem-letter').value = problem.index;
+            document.getElementById('edit-problem-title').value = problem.title || '';
+            document.getElementById('edit-problem-status').value = problem.status;
+            document.getElementById('edit-problem-pdf').value = problem.pdfPath || '';
+            document.getElementById('edit-problem-solution').value = problem.solutionPath || '';
+
+            document.getElementById('edit-problem-modal').classList.add('show');
+        }
+
+        // 处理题目更新
+        function handleUpdateProblem(event) {
+            event.preventDefault();
+            
+            try {
+                const index = parseInt(document.getElementById('edit-problem-index').value);
+                const updates = {
+                    title: document.getElementById('edit-problem-title').value,
+                    status: document.getElementById('edit-problem-status').value,
+                    pdfPath: document.getElementById('edit-problem-pdf').value,
+                    solutionPath: document.getElementById('edit-problem-solution').value
+                };
+
+                contestManager.updateContestProblem(contestId, index, updates);
+                closeEditProblemModal();
+                
+            } catch (error) {
+                showNotification('更新题目失败: ' + error.message, 'error');
+            }
+        }
+
+        // 关闭编辑题目模态框
+        function closeEditProblemModal() {
+            document.getElementById('edit-problem-modal').classList.remove('show');
+        }
+
+        // 添加题目
+        function addProblem() {
+            const problems = currentContest.problems || [];
+            const newIndex = problems.length;
+            const newLetter = String.fromCharCode(65 + newIndex); // A, B, C, ...
+            
+            try {
+                const updates = {
+                    totalProblems: newIndex + 1,
+                    problems: [
+                        ...problems,
+                        {
+                            index: newLetter,
+                            title: '',
+                            status: 'unsolved',
+                            pdfPath: '',
+                            solutionPath: ''
+                        }
+                    ]
+                };
+
+                contestManager.updateContest(contestId, updates);
+                showNotification('题目添加成功', 'success');
+                
+            } catch (error) {
+                showNotification('添加题目失败: ' + error.message, 'error');
+            }
+        }
+
+        // 编辑比赛
+        function editContest() {
+            window.location.href = `contests.html?edit=${contestId}`;
+        }
+
+        // 生成总结模板
+        function downloadSummary() {
+            try {
+                const summaryContent = contestManager.generateSummaryTemplate(contestId);
+                const blob = new Blob([summaryContent], { type: 'text/markdown' });
+                const url = URL.createObjectURL(blob);
+                
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `${currentContest.name}-总结.md`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                
+                showNotification('总结模板下载成功', 'success');
+            } catch (error) {
+                showNotification('生成总结失败: ' + error.message, 'error');
+            }
+        }
+
+        // 返回上一页
+        function goBack() {
+            window.location.href = 'contests.html';
+        }
+
+        // 工具函数
+        function formatDate(dateString) {
+            try {
+                return new Date(dateString).toLocaleDateString('zh-CN');
+            } catch {
+                return dateString;
+            }
+        }
+
+        function showNotification(message, type = 'info') {
+            if (storage && storage.showNotification) {
+                storage.showNotification(message, type);
+            } else {
+                alert(message);
+            }
+        }
+    </script>
+    
+    <style>
+        .problems-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 1rem;
+            padding: 1rem;
+        }
+
+        .problem-card {
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 1rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            background: white;
+        }
+
+        .problem-card:hover {
+            border-color: #3b82f6;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        .problem-card.solved {
+            border-color: #10b981;
+            background: #f0fdf4;
+        }
+
+        .problem-card.unsolved {
+            border-color: #ef4444;
+            background: #fef2f2;
+        }
+
+        .problem-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.5rem;
+        }
+
+        .problem-index {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #374151;
+        }
+
+        .problem-status {
+            font-size: 1.5rem;
+        }
+
+        .problem-title {
+            font-weight: 500;
+            margin-bottom: 0.75rem;
+            color: #374151;
+            min-height: 1.5rem;
+        }
+
+        .problem-links {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .problem-link {
+            padding: 0.25rem 0.5rem;
+            background: #f3f4f6;
+            border-radius: 4px;
+            text-decoration: none;
+            font-size: 0.75rem;
+            color: #374151;
+            transition: background 0.2s;
+        }
+
+        .problem-link:hover:not(.disabled) {
+            background: #e5e7eb;
+        }
+
+        .problem-link.disabled {
+            color: #9ca3af;
+            cursor: not-allowed;
+        }
+
+        .form-value {
+            padding: 0.5rem 0;
+            color: #374151;
+            font-weight: 500;
+        }
+
+        .form-value a {
+            color: #3b82f6;
+            text-decoration: none;
+        }
+
+        .form-value a:hover {
+            text-decoration: underline;
+        }
+
+        .flex {
+            display: flex;
+        }
+
+        .items-center {
+            align-items: center;
+        }
+
+        .gap-3 {
+            gap: 0.75rem;
+        }
+    </style>
+</body>
+</html>

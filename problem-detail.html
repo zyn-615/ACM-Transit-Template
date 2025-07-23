@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>题目详情 - ACM中转站</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <!-- 导航栏 -->
+    <nav class="navbar">
+        <div class="container">
+            <a href="index.html" class="navbar-brand">ACM中转站</a>
+            <ul class="navbar-nav">
+                <li><a href="index.html">仪表板</a></li>
+                <li><a href="contests.html">比赛管理</a></li>
+                <li><a href="problems.html">题目管理</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- 主要内容区域 -->
+    <div class="main-content">
+        <!-- 返回按钮 -->
+        <div class="page-header">
+            <div class="flex items-center gap-3">
+                <button class="btn btn-outline btn-sm" onclick="goBack()">← 返回题目列表</button>
+                <div>
+                    <h1 class="page-title" id="problem-title">题目详情</h1>
+                    <p class="page-subtitle" id="problem-info">加载中...</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 题目基本信息 -->
+        <div class="card" id="problem-details">
+            <div class="card-header">
+                <h2 class="card-title">题目信息</h2>
+                <div class="card-actions">
+                    <button class="btn btn-outline btn-sm" onclick="editProblem()">编辑题目</button>
+                    <button class="btn btn-sm" id="status-toggle-btn" onclick="toggleStatus()">
+                        <!-- 动态设置 -->
+                    </button>
+                </div>
+            </div>
+            <div class="form-container">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label class="form-label">题目平台</label>
+                        <div class="form-value">
+                            <span class="tag" id="problem-platform">-</span>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">题目编号</label>
+                        <div class="form-value" id="problem-index">-</div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">难度值</label>
+                        <div class="form-value" id="problem-difficulty">-</div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">解决状态</label>
+                        <div class="form-value" id="problem-status-display">
+                            <!-- 动态设置 -->
+                        </div>
+                    </div>
+                </div>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label class="form-label">题目链接</label>
+                        <div class="form-value" id="problem-url-display">
+                            <a href="#" id="problem-url-link" target="_blank" style="display: none;">打开题目页面</a>
+                            <span id="problem-url-empty">无</span>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">所属比赛</label>
+                        <div class="form-value" id="problem-contest-display">
+                            <a href="#" id="problem-contest-link" style="display: none;">查看比赛</a>
+                            <span id="problem-contest-empty">无</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label class="form-label">题目PDF</label>
+                        <div class="form-value" id="problem-pdf-display">
+                            <a href="#" id="problem-pdf-link" target="_blank" style="display: none;">查看PDF</a>
+                            <span id="problem-pdf-empty">无</span>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">题解文件</label>
+                        <div class="form-value" id="problem-solution-display">
+                            <a href="#" id="problem-solution-link" target="_blank" style="display: none;">查看题解</a>
+                            <span id="problem-solution-empty">无</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group" id="problem-tags-section" style="display: none;">
+                    <label class="form-label">标签</label>
+                    <div class="form-value">
+                        <div id="problem-tags-display" class="tags-container">
+                            <!-- 动态加载标签 -->
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group" id="problem-notes-section" style="display: none;">
+                    <label class="form-label">备注</label>
+                    <div class="form-value" id="problem-notes-display"></div>
+                </div>
+                <div class="form-group" id="problem-times-section" style="display: none;">
+                    <label class="form-label">时间信息</label>
+                    <div class="form-value">
+                        <div class="time-info">
+                            <div>添加时间: <span id="problem-added-time">-</span></div>
+                            <div id="problem-solved-time-row" style="display: none;">
+                                解决时间: <span id="problem-solved-time">-</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 相关操作 -->
+        <div class="card">
+            <div class="card-header">
+                <h2 class="card-title">快速操作</h2>
+            </div>
+            <div class="form-container">
+                <div class="btn-group">
+                    <button class="btn btn-outline" onclick="createSolutionTemplate()">生成题解模板</button>
+                    <button class="btn btn-outline" onclick="copyProblemInfo()">复制题目信息</button>
+                    <button class="btn btn-outline" onclick="addToCustomContest()">添加到自定义比赛</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 加载 JavaScript -->
+    <script src="js/storage.js"></script>
+    <script src="js/problems.js"></script>
+    <script src="js/contests.js"></script>
+    
+    <script>
+        // 全局变量
+        let storage, problemManager, contestManager;
+        let currentProblem = null;
+        let problemId = null;
+
+        // 从URL获取题目ID
+        function getProblemIdFromUrl() {
+            const urlParams = new URLSearchParams(window.location.search);
+            return urlParams.get('id');
+        }
+
+        // 页面初始化
+        document.addEventListener('DOMContentLoaded', async function() {
+            try {
+                problemId = getProblemIdFromUrl();
+                if (!problemId) {
+                    showNotification('未指定题目ID', 'error');
+                    goBack();
+                    return;
+                }
+
+                // 初始化存储和管理器
+                storage = new DataStorage();
+                problemManager = new ProblemManager(storage);
+                contestManager = new ContestManager(storage);
+
+                // 等待初始化完成
+                await Promise.all([
+                    new Promise(resolve => {
+                        if (problemManager.initialized) {
+                            resolve();
+                        } else {
+                            problemManager.on('initialized', resolve);
+                        }
+                    }),
+                    new Promise(resolve => {
+                        if (contestManager.initialized) {
+                            resolve();
+                        } else {
+                            contestManager.on('initialized', resolve);
+                        }
+                    })
+                ]);
+
+                // 设置事件监听器
+                setupEventListeners();
+                
+                // 加载题目数据
+                await loadProblemData();
+                
+                console.log('题目详情页面初始化完成');
+            } catch (error) {
+                console.error('页面初始化失败:', error);
+                showNotification('页面初始化失败: ' + error.message, 'error');
+            }
+        });
+
+        // 设置事件监听器
+        function setupEventListeners() {
+            problemManager.on('problemUpdated', () => {
+                loadProblemData();
+                showNotification('题目更新成功', 'success');
+            });
+        }
+
+        // 加载题目数据
+        async function loadProblemData() {
+            try {
+                currentProblem = problemManager.findProblemById(problemId);
+                if (!currentProblem) {
+                    showNotification('找不到指定的题目', 'error');
+                    goBack();
+                    return;
+                }
+
+                updateProblemInfo();
+            } catch (error) {
+                console.error('加载题目数据失败:', error);
+                showNotification('加载数据失败: ' + error.message, 'error');
+            }
+        }
+
+        // 更新题目信息显示
+        function updateProblemInfo() {
+            document.getElementById('problem-title').textContent = currentProblem.title;
+            document.getElementById('problem-info').textContent = 
+                `${currentProblem.platform}${currentProblem.problemIndex ? ' • ' + currentProblem.problemIndex : ''}`;
+            
+            document.getElementById('problem-platform').textContent = currentProblem.platform;
+            document.getElementById('problem-index').textContent = currentProblem.problemIndex || '无';
+            
+            // 难度显示
+            if (currentProblem.difficulty) {
+                document.getElementById('problem-difficulty').innerHTML = 
+                    `<span class="difficulty-indicator difficulty-${Math.floor(currentProblem.difficulty/200)*200}">${currentProblem.difficulty}</span>`;
+            } else {
+                document.getElementById('problem-difficulty').textContent = '无';
+            }
+
+            // 状态显示
+            const statusDisplay = document.getElementById('problem-status-display');
+            const statusToggleBtn = document.getElementById('status-toggle-btn');
+            if (currentProblem.status === 'solved') {
+                statusDisplay.innerHTML = '<span class="status-badge status-solved">✅ 已解决</span>';
+                statusToggleBtn.innerHTML = '❌ 标记为未解决';
+                statusToggleBtn.className = 'btn btn-sm btn-secondary';
+            } else {
+                statusDisplay.innerHTML = '<span class="status-badge status-todo">❌ 未解决</span>';
+                statusToggleBtn.innerHTML = '✅ 标记为已解决';
+                statusToggleBtn.className = 'btn btn-sm btn-success';
+            }
+
+            // 题目链接
+            if (currentProblem.url) {
+                document.getElementById('problem-url-link').href = currentProblem.url;
+                document.getElementById('problem-url-link').style.display = 'inline';
+                document.getElementById('problem-url-empty').style.display = 'none';
+            } else {
+                document.getElementById('problem-url-link').style.display = 'none';
+                document.getElementById('problem-url-empty').style.display = 'inline';
+            }
+
+            // 所属比赛
+            if (currentProblem.contestId) {
+                const contest = contestManager.findContestById(currentProblem.contestId);
+                if (contest) {
+                    document.getElementById('problem-contest-link').href = `contest-detail.html?id=${currentProblem.contestId}`;
+                    document.getElementById('problem-contest-link').textContent = contest.name;
+                    document.getElementById('problem-contest-link').style.display = 'inline';
+                    document.getElementById('problem-contest-empty').style.display = 'none';
+                } else {
+                    document.getElementById('problem-contest-link').style.display = 'none';
+                    document.getElementById('problem-contest-empty').style.display = 'inline';
+                }
+            } else {
+                document.getElementById('problem-contest-link').style.display = 'none';
+                document.getElementById('problem-contest-empty').style.display = 'inline';
+            }
+
+            // 题目PDF
+            if (currentProblem.pdfPath) {
+                document.getElementById('problem-pdf-link').href = currentProblem.pdfPath;
+                document.getElementById('problem-pdf-link').style.display = 'inline';
+                document.getElementById('problem-pdf-empty').style.display = 'none';
+            } else {
+                document.getElementById('problem-pdf-link').style.display = 'none';
+                document.getElementById('problem-pdf-empty').style.display = 'inline';
+            }
+
+            // 题解文件
+            if (currentProblem.solutionPath) {
+                document.getElementById('problem-solution-link').href = currentProblem.solutionPath;
+                document.getElementById('problem-solution-link').style.display = 'inline';
+                document.getElementById('problem-solution-empty').style.display = 'none';
+            } else {
+                document.getElementById('problem-solution-link').style.display = 'none';
+                document.getElementById('problem-solution-empty').style.display = 'inline';
+            }
+
+            // 标签
+            if (currentProblem.tags && currentProblem.tags.length > 0) {
+                document.getElementById('problem-tags-display').innerHTML = 
+                    currentProblem.tags.map(tag => 
+                        `<span class="tag tag-${getTagClass(tag)}">${escapeHtml(tag)}</span>`
+                    ).join('');
+                document.getElementById('problem-tags-section').style.display = 'block';
+            } else {
+                document.getElementById('problem-tags-section').style.display = 'none';
+            }
+
+            // 备注
+            if (currentProblem.notes) {
+                document.getElementById('problem-notes-display').textContent = currentProblem.notes;
+                document.getElementById('problem-notes-section').style.display = 'block';
+            } else {
+                document.getElementById('problem-notes-section').style.display = 'none';
+            }
+
+            // 时间信息
+            document.getElementById('problem-added-time').textContent = formatDateTime(currentProblem.addedTime);
+            if (currentProblem.solvedTime) {
+                document.getElementById('problem-solved-time').textContent = formatDateTime(currentProblem.solvedTime);
+                document.getElementById('problem-solved-time-row').style.display = 'block';
+            } else {
+                document.getElementById('problem-solved-time-row').style.display = 'none';
+            }
+            document.getElementById('problem-times-section').style.display = 'block';
+        }
+
+        // 切换题目状态
+        function toggleStatus() {
+            try {
+                const newStatus = currentProblem.status === 'solved' ? 'unsolved' : 'solved';
+                problemManager.updateProblem(problemId, { status: newStatus });
+            } catch (error) {
+                showNotification('更新状态失败: ' + error.message, 'error');
+            }
+        }
+
+        // 编辑题目
+        function editProblem() {
+            window.location.href = `problems.html?edit=${problemId}`;
+        }
+
+        // 生成题解模板
+        function createSolutionTemplate() {
+            try {
+                const template = `# ${currentProblem.title} 题解
+
+## 题目信息
+- **平台**: ${currentProblem.platform}
+- **题目编号**: ${currentProblem.problemIndex || '无'}
+- **难度**: ${currentProblem.difficulty || '无'}
+- **题目链接**: ${currentProblem.url || '无'}
+- **状态**: ${currentProblem.status === 'solved' ? '✅ 已解决' : '❌ 未解决'}
+
+## 题目描述
+[在此添加题目描述或关键信息]
+
+## 解题思路
+[在此描述解题思路和方法]
+
+## 算法/数据结构
+[使用的算法或数据结构]
+
+## 代码实现
+\`\`\`cpp
+// 在此添加代码
+\`\`\`
+
+## 复杂度分析
+- **时间复杂度**: O(?)
+- **空间复杂度**: O(?)
+
+## 总结
+[解题总结和收获]
+
+## 相关题目
+[类似题目或扩展题目]
+
+---
+*题解创建时间: ${new Date().toLocaleString('zh-CN')}*
+`;
+
+                const blob = new Blob([template], { type: 'text/markdown' });
+                const url = URL.createObjectURL(blob);
+                
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `${currentProblem.title}-题解.md`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                
+                showNotification('题解模板下载成功', 'success');
+            } catch (error) {
+                showNotification('生成题解模板失败: ' + error.message, 'error');
+            }
+        }
+
+        // 复制题目信息
+        function copyProblemInfo() {
+            try {
+                const info = `${currentProblem.title}
+平台: ${currentProblem.platform}
+编号: ${currentProblem.problemIndex || '无'}
+难度: ${currentProblem.difficulty || '无'}
+状态: ${currentProblem.status === 'solved' ? '✅ 已解决' : '❌ 未解决'}
+链接: ${currentProblem.url || '无'}`;
+
+                navigator.clipboard.writeText(info).then(() => {
+                    showNotification('题目信息已复制到剪贴板', 'success');
+                }).catch(() => {
+                    // 降级方案
+                    const textArea = document.createElement('textarea');
+                    textArea.value = info;
+                    document.body.appendChild(textArea);
+                    textArea.select();
+                    document.execCommand('copy');
+                    document.body.removeChild(textArea);
+                    showNotification('题目信息已复制到剪贴板', 'success');
+                });
+            } catch (error) {
+                showNotification('复制失败: ' + error.message, 'error');
+            }
+        }
+
+        // 添加到自定义比赛
+        function addToCustomContest() {
+            // 这里可以实现添加到自定义比赛的功能
+            showNotification('此功能正在开发中', 'info');
+        }
+
+        // 返回上一页
+        function goBack() {
+            window.location.href = 'problems.html';
+        }
+
+        // 工具函数
+        function formatDateTime(dateString) {
+            try {
+                return new Date(dateString).toLocaleString('zh-CN');
+            } catch {
+                return dateString;
+            }
+        }
+
+        function getTagClass(tag) {
+            const tagClasses = {
+                'dp': 'dp',
+                'greedy': 'greedy', 
+                'graph': 'graph',
+                'math': 'math',
+                'string': 'string'
+            };
+            return tagClasses[tag] || 'default';
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function showNotification(message, type = 'info') {
+            if (storage && storage.showNotification) {
+                storage.showNotification(message, type);
+            } else {
+                alert(message);
+            }
+        }
+    </script>
+    
+    <style>
+        .flex {
+            display: flex;
+        }
+
+        .items-center {
+            align-items: center;
+        }
+
+        .gap-3 {
+            gap: 0.75rem;
+        }
+
+        .form-value {
+            padding: 0.5rem 0;
+            color: #374151;
+            font-weight: 500;
+        }
+
+        .form-value a {
+            color: #3b82f6;
+            text-decoration: none;
+        }
+
+        .form-value a:hover {
+            text-decoration: underline;
+        }
+
+        .time-info div {
+            margin-bottom: 0.25rem;
+        }
+
+        .time-info div:last-child {
+            margin-bottom: 0;
+        }
+
+        .status-badge {
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+
+        .status-solved {
+            background: #d1fae5;
+            color: #065f46;
+        }
+
+        .status-todo {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .difficulty-indicator {
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: white;
+        }
+
+        .difficulty-800 { background: #22c55e; }
+        .difficulty-1000 { background: #84cc16; }
+        .difficulty-1200 { background: #eab308; }
+        .difficulty-1400 { background: #f97316; }
+        .difficulty-1600 { background: #ef4444; }
+        .difficulty-1800 { background: #dc2626; }
+        .difficulty-2000 { background: #b91c1c; }
+        .difficulty-2200 { background: #7c2d12; }
+        .difficulty-2400 { background: #374151; }
+        .difficulty-2600 { background: #1f2937; }
+        .difficulty-2800 { background: #111827; }
+        .difficulty-3000 { background: #000000; }
+
+        .tags-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+
+        .tag {
+            padding: 0.25rem 0.5rem;
+            background: #f3f4f6;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            color: #374151;
+        }
+
+        .tag-dp { background: #dbeafe; color: #1d4ed8; }
+        .tag-greedy { background: #dcfce7; color: #166534; }
+        .tag-graph { background: #f3e8ff; color: #7c3aed; }
+        .tag-math { background: #fef3c7; color: #d97706; }
+        .tag-string { background: #fce7f3; color: #be185d; }
+    </style>
+</body>
+</html>

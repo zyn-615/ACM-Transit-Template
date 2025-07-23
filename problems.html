@@ -514,6 +514,7 @@
                     </td>
                     <td>
                         <div class="table-actions">
+                            <button class="btn btn-sm btn-primary" onclick="viewProblemDetail('${problem.id}')">详情</button>
                             <button class="btn btn-sm btn-outline" onclick="editProblem('${problem.id}')">编辑</button>
                             ${problem.status !== 'solved' ? 
                                 `<button class="btn btn-sm btn-success" onclick="markAsSolved('${problem.id}')">✅</button>` :
@@ -656,6 +657,11 @@
             applySorting();
             currentPage = 1;
             renderTable();
+        }
+
+        // 查看题目详情页面
+        function viewProblemDetail(id) {
+            window.location.href = `problem-detail.html?id=${id}`;
         }
 
         // 编辑题目
