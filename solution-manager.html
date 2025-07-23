@@ -1,0 +1,677 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>题解管理器 - ACM中转站</title>
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        .solution-manager {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+        
+        .file-path-display {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 6px;
+            padding: 1rem;
+            margin: 1rem 0;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+        }
+        
+        .copy-instruction {
+            background: #e3f2fd;
+            border-left: 4px solid #2196f3;
+            padding: 1rem;
+            margin: 1rem 0;
+            border-radius: 0 4px 4px 0;
+        }
+        
+        .solution-entry {
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            background: #f8f9fa;
+        }
+        
+        .solution-entry.pending {
+            border-left: 4px solid #ffc107;
+            background: #fff8e1;
+        }
+        
+        .solution-entry.completed {
+            border-left: 4px solid #28a745;
+            background: #f1f8e9;
+        }
+        
+        .solution-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.5rem;
+        }
+        
+        .solution-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+        
+        .file-status {
+            display: inline-block;
+            padding: 0.2rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+        
+        .status-pending {
+            background: #fff3cd;
+            color: #856404;
+        }
+        
+        .status-found {
+            background: #d4edda;
+            color: #155724;
+        }
+        
+        .status-missing {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        
+        .author-tag {
+            background: #e7f1ff;
+            color: #0056b3;
+            padding: 0.2rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+        
+        .solution-type-tag {
+            background: #f3e8ff;
+            color: #6b46c1;
+            padding: 0.2rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.8rem;
+        }
+        
+        .folder-tree {
+            background: #2d3748;
+            color: #e2e8f0;
+            padding: 1rem;
+            border-radius: 6px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.85rem;
+            line-height: 1.4;
+            margin: 1rem 0;
+        }
+        
+        .folder-tree .folder {
+            color: #63b3ed;
+        }
+        
+        .folder-tree .file {
+            color: #68d391;
+        }
+        
+        .progress-indicator {
+            background: #e2e8f0;
+            height: 8px;
+            border-radius: 4px;
+            overflow: hidden;
+            margin: 1rem 0;
+        }
+        
+        .progress-bar {
+            background: #48bb78;
+            height: 100%;
+            transition: width 0.3s ease;
+        }
+    </style>
+</head>
+<body>
+    <div class="solution-manager">
+        <div class="page-header">
+            <h1 class="page-title">题解管理器</h1>
+            <p class="page-subtitle">添加和管理题目的题解文件</p>
+        </div>
+
+        <!-- 题目信息 -->
+        <div class="card">
+            <div class="card-header">
+                <h2 class="card-title">题目信息</h2>
+            </div>
+            <div class="card-body">
+                <div id="problem-info-display">
+                    <div class="loading">正在加载题目信息...</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 添加题解 -->
+        <div class="card">
+            <div class="card-header">
+                <h2 class="card-title">添加新题解</h2>
+            </div>
+            <div class="card-body">
+                <form id="solution-form">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label class="form-label">上传者姓名 *</label>
+                            <input type="text" id="uploader-name" class="form-control" placeholder="请输入你的姓名" required>
+                            <div class="form-help">将用于创建文件夹和标识作者</div>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">题解类型 *</label>
+                            <select id="solution-type" class="form-control" required>
+                                <option value="">选择类型</option>
+                                <option value="official">官方题解</option>
+                                <option value="solution">个人题解</option>
+                                <option value="editorial">编辑题解</option>
+                                <option value="approach">解法说明</option>
+                                <option value="analysis">分析文档</option>
+                                <option value="writeup">解题报告</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label class="form-label">文件格式 *</label>
+                            <select id="file-format" class="form-control" required onchange="updateFileName()">
+                                <option value="">选择格式</option>
+                                <option value="md">Markdown (.md)</option>
+                                <option value="pdf">PDF (.pdf)</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">题解标题</label>
+                            <input type="text" id="solution-title" class="form-control" placeholder="题解标题（可选）">
+                            <div class="form-help">不填写将使用默认标题</div>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">题解描述</label>
+                        <textarea id="solution-description" class="form-control" rows="3" placeholder="简述题解内容、使用的算法等（可选）"></textarea>
+                    </div>
+                    <div class="btn-group">
+                        <button type="submit" class="btn btn-primary">创建题解条目</button>
+                        <button type="button" class="btn btn-outline" onclick="resetSolutionForm()">重置</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- 文件夹结构预览 -->
+        <div class="card" id="folder-preview" style="display: none;">
+            <div class="card-header">
+                <h2 class="card-title">文件夹结构预览</h2>
+            </div>
+            <div class="card-body">
+                <div class="folder-tree" id="folder-tree-display"></div>
+            </div>
+        </div>
+
+        <!-- 待处理题解列表 -->
+        <div class="card">
+            <div class="card-header">
+                <h2 class="card-title">题解文件管理</h2>
+                <div class="card-actions">
+                    <button class="btn btn-outline btn-sm" onclick="refreshSolutionStatus()">🔄 刷新状态</button>
+                    <button class="btn btn-outline btn-sm" onclick="createAllFolders()">📁 创建所有文件夹</button>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="progress-indicator">
+                    <div class="progress-bar" id="completion-progress" style="width: 0%"></div>
+                </div>
+                <div id="solutions-list">
+                    <div class="empty-state">
+                        <p>暂无题解文件</p>
+                        <p class="text-sm text-gray-500">添加题解后，这里将显示文件管理指引</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 操作按钮 -->
+        <div class="card">
+            <div class="card-body">
+                <div class="btn-group">
+                    <button class="btn btn-outline" onclick="openFileExplorer()">📂 打开文件管理器</button>
+                    <button class="btn btn-outline" onclick="viewInstructions()">📖 查看详细说明</button>
+                    <button class="btn btn-secondary" onclick="closeSolutionManager()">关闭管理器</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/storage.js"></script>
+    <script src="js/file-manager.js"></script>
+    <script>
+        let currentProblem = null;
+        let problemId = null;
+        let solutionEntries = []; // 存储题解条目
+
+        // 初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            // 从URL或localStorage获取题目信息
+            problemId = new URLSearchParams(window.location.search).get('problemId');
+            if (!problemId) {
+                problemId = localStorage.getItem('current-problem-id');
+            }
+            
+            if (problemId) {
+                loadProblemInfo();
+                loadExistingSolutions();
+            } else {
+                showError('未找到题目ID');
+            }
+        });
+
+        // 加载题目信息
+        async function loadProblemInfo() {
+            try {
+                // 尝试从实际的数据存储中获取题目信息
+                if (window.storage) {
+                    const storage = new DataStorage();
+                    await storage.initialize();
+                    
+                    // 这里应该调用实际的题目查找方法
+                    // 暂时使用基础的查找逻辑
+                    const problems = storage.problems || [];
+                    currentProblem = problems.find(p => p.id === problemId);
+                }
+                
+                // 如果没有找到，使用基于ID的推断
+                if (!currentProblem && problemId) {
+                    // 尝试从题目ID推断信息
+                    const match = problemId.match(/^([^-]+)-([a-zA-Z])$/);
+                    if (match) {
+                        currentProblem = {
+                            id: problemId,
+                            title: `题目 ${match[2].toUpperCase()}`,
+                            platform: "未知平台",
+                            contestId: match[1],
+                            problemLetter: match[2].toUpperCase()
+                        };
+                    } else {
+                        currentProblem = {
+                            id: problemId,
+                            title: "未知题目",
+                            platform: "未知平台",
+                            contestId: problemId,
+                            problemLetter: "A"
+                        };
+                    }
+                }
+                
+                if (currentProblem) {
+                    document.getElementById('problem-info-display').innerHTML = `
+                        <div class="problem-card">
+                            <h3>${currentProblem.title}</h3>
+                            <div class="problem-meta">
+                                <span class="tag">${currentProblem.platform}</span>
+                                <span class="text-gray-500">题目ID: ${currentProblem.id}</span>
+                                ${currentProblem.contestId ? `<span class="text-gray-500">比赛: ${currentProblem.contestId}</span>` : ''}
+                                ${currentProblem.problemLetter ? `<span class="text-gray-500">题号: ${currentProblem.problemLetter}</span>` : ''}
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    throw new Error('无法加载题目信息');
+                }
+            } catch (error) {
+                console.error('加载题目信息失败:', error);
+                showError('加载题目信息失败: ' + error.message);
+            }
+        }
+
+        // 加载现有题解
+        function loadExistingSolutions() {
+            const saved = localStorage.getItem(`solutions-${problemId}`);
+            if (saved) {
+                solutionEntries = JSON.parse(saved);
+                renderSolutionsList();
+                updateProgress();
+            }
+        }
+
+        // 更新文件名预览
+        function updateFileName() {
+            const uploaderName = document.getElementById('uploader-name').value.trim();
+            const solutionType = document.getElementById('solution-type').value;
+            const fileFormat = document.getElementById('file-format').value;
+            
+            if (uploaderName && solutionType && fileFormat && currentProblem) {
+                const fileName = generateFileName(solutionType, uploaderName, fileFormat);
+                const filePath = generateFilePath(currentProblem.contestId, currentProblem.problemLetter, fileName);
+                
+                document.getElementById('folder-preview').style.display = 'block';
+                document.getElementById('folder-tree-display').innerHTML = generateFolderTree(filePath);
+            }
+        }
+
+        // 生成文件名
+        function generateFileName(type, uploader, format) {
+            if (type === 'official') {
+                return `official.${format}`;
+            } else {
+                const cleanUploader = uploader.toLowerCase().replace(/[^a-z0-9]/g, '');
+                return `${type}-${cleanUploader}.${format}`;
+            }
+        }
+
+        // 生成文件路径
+        function generateFilePath(contestId, problemLetter, fileName) {
+            return `assets/pdfs/${contestId}/solutions/${problemLetter}/${fileName}`;
+        }
+
+        // 生成文件夹树状图
+        function generateFolderTree(filePath) {
+            const parts = filePath.split('/');
+            let tree = '';
+            let indent = '';
+            
+            for (let i = 0; i < parts.length; i++) {
+                const part = parts[i];
+                const isFile = i === parts.length - 1;
+                const prefix = i === 0 ? '' : (i === parts.length - 1 ? '└── ' : '├── ');
+                
+                if (isFile) {
+                    tree += `${indent}${prefix}<span class="file">${part}</span>\n`;
+                } else {
+                    tree += `${indent}${prefix}<span class="folder">${part}/</span>\n`;
+                    if (i < parts.length - 2) {
+                        indent += '│   ';
+                    } else {
+                        indent += '    ';
+                    }
+                }
+            }
+            
+            return tree;
+        }
+
+        // 监听表单输入变化
+        document.getElementById('uploader-name').addEventListener('input', updateFileName);
+        document.getElementById('solution-type').addEventListener('change', updateFileName);
+
+        // 处理表单提交
+        document.getElementById('solution-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const uploaderName = document.getElementById('uploader-name').value.trim();
+            const solutionType = document.getElementById('solution-type').value;
+            const fileFormat = document.getElementById('file-format').value;
+            const solutionTitle = document.getElementById('solution-title').value.trim();
+            const description = document.getElementById('solution-description').value.trim();
+            
+            if (!uploaderName || !solutionType || !fileFormat) {
+                alert('请填写所有必填字段');
+                return;
+            }
+            
+            // 创建题解条目
+            const fileName = generateFileName(solutionType, uploaderName, fileFormat);
+            const filePath = generateFilePath(currentProblem.contestId, currentProblem.problemLetter, fileName);
+            
+            const solutionEntry = {
+                id: Date.now().toString(),
+                problemId: problemId,
+                uploader: uploaderName,
+                type: solutionType,
+                format: fileFormat,
+                title: solutionTitle || `${uploaderName}的${solutionType}`,
+                description: description,
+                fileName: fileName,
+                filePath: filePath,
+                status: 'pending', // pending, completed
+                createdAt: new Date().toISOString()
+            };
+            
+            solutionEntries.push(solutionEntry);
+            saveSolutions();
+            renderSolutionsList();
+            updateProgress();
+            resetSolutionForm();
+            
+            // 显示成功消息和复制指导
+            showCopyInstructions(solutionEntry);
+        });
+
+        // 显示复制指导
+        function showCopyInstructions(entry) {
+            const instructions = `
+                <div class="copy-instruction">
+                    <h4>📁 文件复制指导</h4>
+                    <p><strong>1. 创建文件夹结构：</strong></p>
+                    <div class="file-path-display">${entry.filePath}</div>
+                    
+                    <p><strong>2. 将你的题解文件重命名为：</strong></p>
+                    <div class="file-path-display">${entry.fileName}</div>
+                    
+                    <p><strong>3. 复制到指定位置后点击"刷新状态"按钮</strong></p>
+                    
+                    <div class="btn-group">
+                        <button class="btn btn-primary btn-sm" onclick="createFolderForEntry('${entry.id}')">自动创建文件夹</button>
+                        <button class="btn btn-outline btn-sm" onclick="copyPathToClipboard('${entry.filePath}')">复制路径</button>
+                    </div>
+                </div>
+            `;
+            
+            // 可以显示在一个模态框或通知区域
+            alert('题解条目创建成功！请查看下方的文件复制指导。');
+        }
+
+        // 渲染题解列表
+        function renderSolutionsList() {
+            const container = document.getElementById('solutions-list');
+            
+            if (solutionEntries.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <p>暂无题解文件</p>
+                        <p class="text-sm text-gray-500">添加题解后，这里将显示文件管理指引</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            let html = '';
+            solutionEntries.forEach(entry => {
+                const statusClass = entry.status === 'completed' ? 'completed' : 'pending';
+                const statusText = entry.status === 'completed' ? '已完成' : '待复制';
+                const statusIcon = entry.status === 'completed' ? '✅' : '⏳';
+                
+                html += `
+                    <div class="solution-entry ${statusClass}">
+                        <div class="solution-meta">
+                            <div>
+                                <strong>${entry.title}</strong>
+                                <span class="author-tag">${entry.uploader}</span>
+                                <span class="solution-type-tag">${entry.type}</span>
+                            </div>
+                            <div class="solution-actions">
+                                <span class="file-status status-${entry.status}">${statusIcon} ${statusText}</span>
+                                <button class="btn btn-outline btn-sm" onclick="checkFileStatus('${entry.id}')">检查</button>
+                                <button class="btn btn-outline btn-sm" onclick="deleteEntry('${entry.id}')">删除</button>
+                            </div>
+                        </div>
+                        <div class="solution-details">
+                            <div class="file-path-display">${entry.filePath}</div>
+                            ${entry.description ? `<p class="text-sm text-gray-600">${entry.description}</p>` : ''}
+                            <div class="copy-instruction">
+                                <p><strong>复制指导：</strong></p>
+                                <ol>
+                                    <li>将你的题解文件重命名为：<code>${entry.fileName}</code></li>
+                                    <li>复制到路径：<code>${entry.filePath}</code></li>
+                                    <li>点击"检查"按钮验证文件是否已正确放置</li>
+                                </ol>
+                                <div class="btn-group">
+                                    <button class="btn btn-primary btn-sm" onclick="createFolderForEntry('${entry.id}')">创建文件夹</button>
+                                    <button class="btn btn-outline btn-sm" onclick="copyPathToClipboard('${entry.filePath}')">复制路径</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            container.innerHTML = html;
+        }
+
+        // 检查文件状态
+        async function checkFileStatus(entryId) {
+            const entry = solutionEntries.find(e => e.id === entryId);
+            if (!entry) return;
+            
+            try {
+                // 检查文件是否存在
+                const response = await fetch(entry.filePath, { method: 'HEAD' });
+                entry.status = response.ok ? 'completed' : 'pending';
+                
+                saveSolutions();
+                renderSolutionsList();
+                updateProgress();
+                
+                if (response.ok) {
+                    alert('✅ 文件已找到！');
+                } else {
+                    alert('❌ 文件未找到，请检查路径和文件名');
+                }
+            } catch (error) {
+                alert('检查失败: ' + error.message);
+            }
+        }
+
+        // 创建文件夹
+        function createFolderForEntry(entryId) {
+            const entry = solutionEntries.find(e => e.id === entryId);
+            if (!entry) return;
+            
+            // 这里实际上无法在浏览器中创建文件夹
+            // 只能给用户提供指导信息
+            const folderPath = entry.filePath.substring(0, entry.filePath.lastIndexOf('/'));
+            
+            alert(`请手动创建文件夹结构：\n${folderPath}\n\n然后将文件复制到该位置。`);
+        }
+
+        // 复制路径到剪贴板
+        async function copyPathToClipboard(path) {
+            try {
+                await navigator.clipboard.writeText(path);
+                alert('路径已复制到剪贴板');
+            } catch (error) {
+                // 降级方案
+                const textArea = document.createElement('textarea');
+                textArea.value = path;
+                document.body.appendChild(textArea);
+                textArea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textArea);
+                alert('路径已复制到剪贴板');
+            }
+        }
+
+        // 删除条目
+        function deleteEntry(entryId) {
+            if (confirm('确定要删除这个题解条目吗？')) {
+                solutionEntries = solutionEntries.filter(e => e.id !== entryId);
+                saveSolutions();
+                renderSolutionsList();
+                updateProgress();
+            }
+        }
+
+        // 刷新所有题解状态
+        async function refreshSolutionStatus() {
+            for (const entry of solutionEntries) {
+                try {
+                    const response = await fetch(entry.filePath, { method: 'HEAD' });
+                    entry.status = response.ok ? 'completed' : 'pending';
+                } catch (error) {
+                    entry.status = 'pending';
+                }
+            }
+            
+            saveSolutions();
+            renderSolutionsList();
+            updateProgress();
+            alert('状态已刷新');
+        }
+
+        // 创建所有文件夹
+        function createAllFolders() {
+            const folders = new Set();
+            solutionEntries.forEach(entry => {
+                const folderPath = entry.filePath.substring(0, entry.filePath.lastIndexOf('/'));
+                folders.add(folderPath);
+            });
+            
+            if (folders.size === 0) {
+                alert('没有需要创建的文件夹');
+                return;
+            }
+            
+            const folderList = Array.from(folders).join('\n');
+            alert(`请手动创建以下文件夹结构：\n\n${folderList}`);
+        }
+
+        // 更新进度
+        function updateProgress() {
+            const total = solutionEntries.length;
+            const completed = solutionEntries.filter(e => e.status === 'completed').length;
+            const percentage = total > 0 ? (completed / total) * 100 : 0;
+            
+            document.getElementById('completion-progress').style.width = percentage + '%';
+        }
+
+        // 保存题解数据
+        function saveSolutions() {
+            localStorage.setItem(`solutions-${problemId}`, JSON.stringify(solutionEntries));
+        }
+
+        // 重置表单
+        function resetSolutionForm() {
+            document.getElementById('solution-form').reset();
+            document.getElementById('folder-preview').style.display = 'none';
+        }
+
+        // 打开文件管理器
+        function openFileExplorer() {
+            if (currentProblem) {
+                const folderPath = `assets/pdfs/${currentProblem.contestId}/solutions/${currentProblem.problemLetter}`;
+                alert(`请在文件管理器中打开：\n${folderPath}`);
+            }
+        }
+
+        // 查看详细说明
+        function viewInstructions() {
+            window.open('assets/FILE_SYSTEM_GUIDE.md', '_blank');
+        }
+
+        // 关闭管理器
+        function closeSolutionManager() {
+            if (window.opener) {
+                window.close();
+            } else {
+                history.back();
+            }
+        }
+
+        // 显示错误
+        function showError(message) {
+            document.getElementById('problem-info-display').innerHTML = `
+                <div class="error-state">
+                    <h3>❌ 错误</h3>
+                    <p>${message}</p>
+                </div>
+            `;
+        }
+    </script>
+</body>
+</html>

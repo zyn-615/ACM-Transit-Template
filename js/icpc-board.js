@@ -67,7 +67,10 @@ class ICPCBoardRenderer {
 
             if (result.status === 'AC') {
                 solvedCount++;
-                totalPenalty += (result.acTime || 0) + (result.penalty || 0);
+                // ICPC正确罚时计算：AC时间 + (尝试次数 - 1) × 20
+                const acTime = result.acTime || 0;
+                const wrongAttempts = Math.max(0, (result.attempts || 1) - 1);
+                totalPenalty += acTime + (wrongAttempts * 20);
             }
         });
 

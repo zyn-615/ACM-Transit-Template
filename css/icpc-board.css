@@ -1,0 +1,608 @@
+/**
+ * ACM中转站 - ICPC风格比赛榜单样式
+ * 仿照xcpcio.com和ICPC Tools的横条式排名显示
+ * 支持颜色编码的题目状态和响应式设计
+ */
+
+/* ==========================================================================
+   ICPC榜单主容器
+   ========================================================================== */
+
+.icpc-board {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+    margin: 2rem 0;
+    font-family: 'SF Mono', 'Monaco', 'Consolas', 'Courier New', monospace;
+    border: 1px solid #e5e7eb;
+}
+
+/* ==========================================================================
+   榜单头部
+   ========================================================================== */
+
+.icpc-board-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 2rem;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 2rem;
+    align-items: center;
+}
+
+.contest-info {
+    min-width: 0;
+}
+
+.contest-name {
+    font-size: 1.75rem;
+    font-weight: 700;
+    margin: 0 0 0.75rem 0;
+    line-height: 1.2;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.contest-meta {
+    display: flex;
+    gap: 1.5rem;
+    font-size: 1rem;
+    opacity: 0.95;
+    flex-wrap: wrap;
+}
+
+.contest-meta .platform {
+    background: rgba(255, 255, 255, 0.2);
+    padding: 0.375rem 0.75rem;
+    border-radius: 6px;
+    font-weight: 500;
+    backdrop-filter: blur(10px);
+}
+
+.contest-meta .date {
+    font-weight: 500;
+}
+
+.rank-info {
+    text-align: right;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    min-width: 0;
+}
+
+.rank-display {
+    font-size: 2.5rem;
+    font-weight: 800;
+    line-height: 1;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.solve-info, .penalty-info {
+    font-size: 1.125rem;
+    font-weight: 600;
+    opacity: 0.95;
+}
+
+/* ==========================================================================
+   榜单主体 - 横条式布局
+   ========================================================================== */
+
+.icpc-board-body {
+    padding: 0;
+    background: #f8fafc;
+}
+
+.team-row {
+    display: grid;
+    grid-template-columns: 300px 1fr;
+    border-bottom: 1px solid #e5e7eb;
+    transition: all 0.2s ease;
+    background: white;
+}
+
+.team-row:hover {
+    background: #f1f5f9;
+    box-shadow: inset 0 0 0 2px #e2e8f0;
+}
+
+.team-info {
+    display: grid;
+    grid-template-columns: 80px 1fr auto;
+    align-items: center;
+    padding: 1.5rem;
+    background: #f9fafb;
+    border-right: 2px solid #e5e7eb;
+    gap: 1rem;
+}
+
+.team-rank {
+    font-size: 2rem;
+    font-weight: 800;
+    color: #1e293b;
+    text-align: center;
+}
+
+.team-name {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: #374151;
+}
+
+.team-stats {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0.25rem;
+    font-size: 0.875rem;
+    color: #6b7280;
+    font-weight: 500;
+}
+
+/* ==========================================================================
+   题目行布局
+   ========================================================================== */
+
+.problems-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+    align-items: stretch;
+    min-height: 100px;
+}
+
+.problem-cell {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem 0.5rem;
+    border-right: 1px solid #e5e7eb;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+    min-height: 100px;
+    font-weight: 600;
+}
+
+.problem-cell:last-child {
+    border-right: none;
+}
+
+.problem-cell:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    z-index: 10;
+}
+
+.problem-letter {
+    font-size: 1.25rem;
+    font-weight: 800;
+    margin-bottom: 0.5rem;
+    line-height: 1;
+}
+
+.problem-info {
+    font-size: 0.875rem;
+    text-align: center;
+    line-height: 1.3;
+}
+
+/* ==========================================================================
+   题目状态颜色编码 - 仿照ICPC官方配色
+   ========================================================================== */
+
+.status-ac {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    color: white;
+    border-left: 4px solid #047857;
+}
+
+.status-ac:hover {
+    background: linear-gradient(135deg, #059669 0%, #047857 100%);
+}
+
+.status-wa {
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+    color: white;
+    border-left: 4px solid #b91c1c;
+}
+
+.status-wa:hover {
+    background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+}
+
+.status-tle {
+    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+    color: white;
+    border-left: 4px solid #b45309;
+}
+
+.status-tle:hover {
+    background: linear-gradient(135deg, #d97706 0%, #b45309 100%);
+}
+
+.status-partial {
+    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+    color: white;
+    border-left: 4px solid #1d4ed8;
+}
+
+.status-partial:hover {
+    background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+}
+
+.status-unattempted {
+    background: #f9fafb;
+    color: #6b7280;
+    border-left: 4px solid #d1d5db;
+    border-style: dashed;
+}
+
+.status-unattempted:hover {
+    background: #f3f4f6;
+    color: #374151;
+}
+
+/* ==========================================================================
+   单元格内容样式
+   ========================================================================== */
+
+.ac-time {
+    font-weight: 800;
+    font-size: 1rem;
+    line-height: 1;
+}
+
+.attempts {
+    font-size: 0.75rem;
+    opacity: 0.9;
+    margin-top: 0.25rem;
+}
+
+.partial-score {
+    font-weight: 800;
+    font-size: 0.9rem;
+    line-height: 1;
+}
+
+.no-attempt {
+    font-size: 1.5rem;
+    opacity: 0.4;
+    font-weight: 300;
+}
+
+/* ==========================================================================
+   图例说明
+   ========================================================================== */
+
+.icpc-legend {
+    background: #f8fafc;
+    padding: 1.5rem 2rem;
+    border-top: 1px solid #e5e7eb;
+}
+
+.legend-title {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #374151;
+    margin: 0 0 1rem 0;
+}
+
+.legend-items {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 1rem;
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-size: 0.875rem;
+    color: #4b5563;
+    font-weight: 500;
+}
+
+.legend-color {
+    width: 20px;
+    height: 20px;
+    border-radius: 4px;
+    flex-shrink: 0;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.legend-color.status-ac { 
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%); 
+}
+
+.legend-color.status-wa { 
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); 
+}
+
+.legend-color.status-tle { 
+    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); 
+}
+
+.legend-color.status-partial { 
+    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); 
+}
+
+.legend-color.status-unattempted { 
+    background: #f9fafb; 
+    border: 1px dashed #d1d5db; 
+}
+
+/* ==========================================================================
+   响应式设计
+   ========================================================================== */
+
+@media (max-width: 1024px) {
+    .icpc-board-header {
+        grid-template-columns: 1fr;
+        gap: 1.5rem;
+        text-align: center;
+    }
+    
+    .rank-info {
+        text-align: center;
+    }
+    
+    .contest-meta {
+        justify-content: center;
+    }
+    
+    .team-row {
+        grid-template-columns: 250px 1fr;
+    }
+    
+    .team-info {
+        padding: 1rem;
+    }
+    
+    .problems-row {
+        grid-template-columns: repeat(auto-fit, minmax(70px, 1fr));
+    }
+}
+
+@media (max-width: 768px) {
+    .icpc-board {
+        margin: 1rem 0;
+        border-radius: 8px;
+    }
+    
+    .icpc-board-header {
+        padding: 1.5rem;
+    }
+    
+    .contest-name {
+        font-size: 1.5rem;
+    }
+    
+    .rank-display {
+        font-size: 2rem;
+    }
+    
+    .team-row {
+        grid-template-columns: 1fr;
+    }
+    
+    .team-info {
+        border-right: none;
+        border-bottom: 1px solid #e5e7eb;
+        grid-template-columns: auto 1fr auto;
+        padding: 1rem;
+    }
+    
+    .team-rank {
+        font-size: 1.5rem;
+    }
+    
+    .problems-row {
+        padding: 1rem;
+        grid-template-columns: repeat(auto-fit, minmax(60px, 1fr));
+        gap: 0.5rem;
+        justify-content: center;
+    }
+    
+    .problem-cell {
+        border-radius: 8px;
+        border: 1px solid #e5e7eb;
+        border-right: 1px solid #e5e7eb !important;
+        min-height: 80px;
+        padding: 0.75rem 0.5rem;
+    }
+    
+    .problem-letter {
+        font-size: 1.125rem;
+    }
+    
+    .problem-info {
+        font-size: 0.8rem;
+    }
+    
+    .legend-items {
+        grid-template-columns: 1fr;
+        gap: 0.75rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .icpc-board-header {
+        padding: 1rem;
+    }
+    
+    .contest-name {
+        font-size: 1.25rem;
+    }
+    
+    .contest-meta {
+        flex-direction: column;
+        gap: 0.5rem;
+        align-items: center;
+    }
+    
+    .team-info {
+        grid-template-columns: 1fr;
+        text-align: center;
+        gap: 0.5rem;
+    }
+    
+    .team-stats {
+        align-items: center;
+        flex-direction: row;
+        gap: 1rem;
+        justify-content: center;
+    }
+    
+    .problems-row {
+        grid-template-columns: repeat(auto-fill, minmax(50px, 1fr));
+        padding: 0.75rem;
+    }
+    
+    .problem-cell {
+        min-height: 60px;
+        padding: 0.5rem 0.25rem;
+    }
+    
+    .problem-letter {
+        font-size: 1rem;
+    }
+    
+    .problem-info {
+        font-size: 0.75rem;
+    }
+}
+
+/* ==========================================================================
+   打印样式
+   ========================================================================== */
+
+@media print {
+    .icpc-board {
+        box-shadow: none;
+        border: 1px solid #000;
+        break-inside: avoid;
+    }
+    
+    .icpc-board-header {
+        background: #f0f0f0 !important;
+        color: #000 !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+    
+    .problem-cell {
+        border: 1px solid #000 !important;
+    }
+    
+    .status-ac { 
+        background: #90ee90 !important; 
+        color: #000 !important;
+    }
+    
+    .status-wa { 
+        background: #ffcccb !important; 
+        color: #000 !important;
+    }
+    
+    .status-tle { 
+        background: #ffeb9c !important; 
+        color: #000 !important;
+    }
+    
+    .status-partial { 
+        background: #add8e6 !important; 
+        color: #000 !important;
+    }
+    
+    .icpc-legend {
+        break-inside: avoid;
+        margin-top: 1rem;
+    }
+}
+
+/* ==========================================================================
+   动画效果
+   ========================================================================== */
+
+@keyframes boardSlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.icpc-board {
+    animation: boardSlideIn 0.5s ease-out;
+}
+
+@keyframes problemCellPulse {
+    0% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.05);
+    }
+    100% {
+        transform: scale(1);
+    }
+}
+
+.problem-cell.highlight {
+    animation: problemCellPulse 0.6s ease-in-out;
+}
+
+/* ==========================================================================
+   深色模式支持
+   ========================================================================== */
+
+@media (prefers-color-scheme: dark) {
+    .icpc-board {
+        background: #1f2937;
+        border-color: #374151;
+    }
+    
+    .icpc-board-body {
+        background: #111827;
+    }
+    
+    .team-row {
+        background: #1f2937;
+        border-color: #374151;
+    }
+    
+    .team-row:hover {
+        background: #374151;
+    }
+    
+    .team-info {
+        background: #111827;
+        border-color: #374151;
+    }
+    
+    .team-rank, .team-name {
+        color: #f3f4f6;
+    }
+    
+    .team-stats {
+        color: #9ca3af;
+    }
+    
+    .icpc-legend {
+        background: #111827;
+        border-color: #374151;
+    }
+    
+    .legend-title {
+        color: #f3f4f6;
+    }
+    
+    .legend-item {
+        color: #d1d5db;
+    }
+}

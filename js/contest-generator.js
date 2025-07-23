@@ -114,8 +114,8 @@ class ContestGenerator {
         // 生成题目标题：比赛名称 + 题目字母
         const title = `${contestData.name} - ${letter}`;
         
-        // 生成URL
-        const url = this.generateProblemUrl(config, contestId, letter);
+        // 不自动生成URL，让用户手动填写 
+        const url = '';
         
         // 获取默认难度
         const difficulty = config.defaultDifficulties[index] || 1000;

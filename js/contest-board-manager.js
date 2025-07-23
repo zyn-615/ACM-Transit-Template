@@ -385,7 +385,9 @@ class ContestBoardManager {
         Object.values(contestant.problems).forEach(problem => {
             if (problem.status === 'solved') {
                 solved++;
-                penalty += problem.time + (problem.attempts - 1) * 20; // 假设每次错误尝试罚时20分钟
+                // ICPC标准公式：罚时 = AC时间 + (错误提交次数) × 20分钟
+                const wrongAttempts = Math.max(0, problem.attempts - 1);
+                penalty += problem.time + (wrongAttempts * 20);
             }
         });
 

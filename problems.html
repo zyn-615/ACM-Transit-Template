@@ -110,13 +110,19 @@
                             <input type="url" id="problem-url" class="form-control" placeholder="https://...">
                         </div>
                         <div class="form-group">
-                            <label class="form-label" for="problem-pdf">题目PDF路径</label>
-                            <input type="text" id="problem-pdf" class="form-control" placeholder="./files/contest-pdfs/cf-900/A.pdf">
+                            <label class="form-label" for="problem-pdf-file">题目PDF文件</label>
+                            <input type="file" id="problem-pdf-file" class="form-control" accept=".pdf">
+                            <div class="form-help">选择题目PDF文件（可选）</div>
                         </div>
                     </div>
                     <div class="form-group">
-                        <label class="form-label" for="problem-solution">题解路径</label>
-                        <input type="text" id="problem-solution" class="form-control" placeholder="./files/summaries/solutions/cf-900-A.md">
+                        <label class="form-label">题解管理</label>
+                        <div class="solution-management">
+                            <button type="button" class="btn btn-outline btn-sm" onclick="openSolutionManager()">
+                                📝 管理题解文件
+                            </button>
+                            <div class="form-help">点击管理题解文件的上传和组织</div>
+                        </div>
                     </div>
                     <div class="form-group">
                         <label class="form-label" for="problem-tags-input">标签</label>
@@ -567,6 +573,44 @@
             }
         }
 
+        // 处理文件上传
+        function handleFileUpload(fileInput, folder) {
+            const file = fileInput.files[0];
+            if (file) {
+                // 生成标准化文件名
+                const sanitizedName = file.name.replace(/[^\w\-\.]/g, '_');
+                const relativePath = `./files/${folder}/${sanitizedName}`;
+                
+                // 显示文件保存指导
+                const fullPath = `/home/zyn/program/2025-Summer/ACM-Transit/Context-Engineering-Intro/acm-transit/files/${folder}/${sanitizedName}`;
+                
+                showFileUploadGuide(file.name, sanitizedName, fullPath, folder);
+                
+                return relativePath;
+            }
+            return '';
+        }
+        
+        // 显示文件上传指导
+        function showFileUploadGuide(originalName, sanitizedName, fullPath, folder) {
+            const message = `
+文件上传指导：
+\n原文件名: ${originalName}
+标准化名称: ${sanitizedName}
+\n请手动将文件复制到：
+${fullPath}
+\n或者使用命令：
+cp “文件路径” “${fullPath}”
+\n文件已登记到系统中，但需要您手动放置文件才能正常访问。
+            `;
+            
+            if (confirm(message + '\n\n点击确定继续，取消则不保存文件路径。')) {
+                console.log('文件上传指导:', { originalName, sanitizedName, fullPath, folder });
+                return true;
+            }
+            return false;
+        }
+
         // 处理题目提交
         function handleSubmitProblem(event) {
             event.preventDefault();
@@ -580,8 +624,7 @@
                     problemIndex: document.getElementById('problem-index').value,
                     url: document.getElementById('problem-url').value,
                     contestId: document.getElementById('problem-contest').value,
-                    pdfPath: document.getElementById('problem-pdf').value,
-                    solutionPath: document.getElementById('problem-solution').value,
+                    pdfPath: handleFileUpload(document.getElementById('problem-pdf-file'), 'contest-pdfs'),
                     tags: selectedTags,
                     notes: document.getElementById('problem-notes').value
                 };
@@ -600,6 +643,45 @@
             selectedTags = [];
             updateSelectedTags();
             document.getElementById('problem-status').value = 'unsolved';
+        }
+
+        // 打开题解管理器
+        function openSolutionManager(problemId = null) {
+            // 如果没有指定problemId，尝试从当前编辑的题目获取
+            if (!problemId) {
+                const urlParams = new URLSearchParams(window.location.search);
+                problemId = urlParams.get('edit');
+            }
+            
+            // 如果还是没有，提示用户先保存题目
+            if (!problemId) {
+                if (confirm('请先保存题目，然后再管理题解文件。是否现在保存题目？')) {
+                    // 尝试提交表单
+                    const form = document.getElementById('problem-form');
+                    if (form.checkValidity()) {
+                        handleSubmitProblem(new Event('submit'));
+                        return;
+                    } else {
+                        alert('请先填写完整的题目信息');
+                        return;
+                    }
+                }
+                return;
+            }
+            
+            // 保存当前题目ID到localStorage
+            localStorage.setItem('current-problem-id', problemId);
+            
+            // 在新窗口中打开题解管理器
+            const managerWindow = window.open(
+                `solution-manager.html?problemId=${encodeURIComponent(problemId)}`,
+                'solution-manager',
+                'width=1000,height=800,scrollbars=yes,resizable=yes'
+            );
+            
+            if (!managerWindow) {
+                alert('无法打开题解管理器窗口，请检查浏览器的弹窗设置');
+            }
         }
 
         // 防抖搜索处理

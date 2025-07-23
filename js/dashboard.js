@@ -76,22 +76,97 @@ class DashboardManager {
         const thisMonth = now.toISOString().substring(0, 7);
         const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
 
+        // 基础统计 - 增强版本
+        const totalContests = this.contests.length;
+        const totalProblems = this.problems.length;
+        const solvedProblems = this.problems.filter(p => p.status === 'solved').length;
+        
+        // 时间统计 - 增强版本
+        const thisMonthContests = this.contests.filter(c => 
+            c.date && c.date.substring(0, 7) === thisMonth
+        ).length;
+        
+        const thisWeekSolved = this.problems.filter(p => 
+            p.status === 'solved' && 
+            p.solvedTime && 
+            new Date(p.solvedTime) >= oneWeekAgo
+        ).length;
+
+        // 平均难度计算 - 新增
+        const solvedWithDifficulty = this.problems.filter(p => 
+            p.status === 'solved' && p.difficulty && !isNaN(p.difficulty)
+        );
+        const averageDifficulty = solvedWithDifficulty.length > 0
+            ? Math.round(solvedWithDifficulty.reduce((sum, p) => sum + Number(p.difficulty), 0) / solvedWithDifficulty.length)
+            : 0;
+
+        // 平均排名计算 - 新增
+        const rankedContests = this.contests.filter(c => 
+            c.finalRank && c.finalRank.includes('/')
+        );
+        let averageRank = 'N/A';
+        if (rankedContests.length > 0) {
+            const avgPercentile = rankedContests.reduce((sum, c) => {
+                try {
+                    const [rank, total] = c.finalRank.split('/').map(n => parseInt(n));
+                    return sum + (rank / total);
+                } catch {
+                    return sum;
+                }
+            }, 0) / rankedContests.length;
+            averageRank = Math.round(avgPercentile * 100) + '%';
+        }
+
+        // 统计数据结构 - 完整版本
         this.statistics = {
-            totalContests: this.contests.length,
-            totalProblems: this.problems.length,
-            solvedProblems: this.problems.filter(p => p.status === 'solved').length,
-            thisMonthContests: this.contests.filter(c => 
-                c.date && c.date.substring(0, 7) === thisMonth
-            ).length,
-            thisWeekSolved: this.problems.filter(p => 
-                p.status === 'solved' && 
-                p.solvedTime && 
-                new Date(p.solvedTime) >= oneWeekAgo
-            ).length,
+            // 基础统计
+            totalContests,
+            totalProblems,
+            solvedProblems,
+            solveRate: totalProblems > 0 ? Math.round((solvedProblems / totalProblems) * 100) : 0,
+            
+            // 时间统计
+            thisMonthContests,
+            thisWeekSolved,
+            averageDifficulty,
+            averageRank,
+            
+            // 最近活动
             recentContests: this.getRecentContests(),
             recentProblems: this.getRecentProblems(),
+            
+            // 平台分布
+            contestPlatforms: this.getContestPlatformStats(),
+            problemTags: this.getProblemTagStats(),
+            
+            // 元数据
             lastUpdated: new Date().toISOString()
         };
+
+        console.log('统计数据计算完成:', this.statistics);
+    }
+
+    // 新增：获取比赛平台统计
+    getContestPlatformStats() {
+        const platforms = {};
+        this.contests.forEach(contest => {
+            const platform = contest.platform || 'Unknown';
+            platforms[platform] = (platforms[platform] || 0) + 1;
+        });
+        return platforms;
+    }
+
+    // 新增：获取题目标签统计
+    getProblemTagStats() {
+        const tags = {};
+        this.problems.forEach(problem => {
+            if (problem.tags && Array.isArray(problem.tags)) {
+                problem.tags.forEach(tag => {
+                    tags[tag] = (tags[tag] || 0) + 1;
+                });
+            }
+        });
+        return tags;
     }
 
     getRecentContests() {
@@ -128,25 +203,36 @@ class DashboardManager {
         }
         
         try {
+            // 更新基础统计卡片
             this.updateElement('total-contests', this.statistics.totalContests);
             this.updateElement('total-problems', this.statistics.totalProblems);
             this.updateElement('solved-problems', this.statistics.solvedProblems);
+            this.updateElement('solve-rate', `解决率 ${this.statistics.solveRate}%`);
+            
+            // 更新活动统计
             this.updateElement('this-month-contests', this.statistics.thisMonthContests);
             this.updateElement('this-week-solved', this.statistics.thisWeekSolved);
+            this.updateElement('average-difficulty', this.statistics.averageDifficulty || '-');
+            this.updateElement('average-rank', this.statistics.averageRank);
             
+            // 渲染最近活动
             this.renderRecentActivities();
-            console.log('Dashboard render completed');
+            this.renderPlatformDistribution();
+            this.renderPopularTags();
+            
+            console.log('仪表盘渲染完成');
         } catch (error) {
-            console.error('Dashboard render failed:', error);
-            this.renderErrorState('Render failed: ' + error.message);
+            console.error('渲染仪表盘失败:', error);
+            this.renderErrorState('渲染失败: ' + error.message);
         }
     }
 
+    // 安全更新DOM元素 - 增强版本
     updateElement(id, value) {
         const element = document.getElementById(id);
         if (element) {
             element.textContent = value;
-            console.log(`Updated ${id}: ${value}`);
+            console.log(`更新元素 ${id}: ${value}`);
         } else {
             console.warn(`Element with id '${id}' not found`);
         }
@@ -251,13 +337,13 @@ class DashboardManager {
     }
 
     /**
-     * 渲染热门标签
+     * 渲染热门标签 - 更新版本
      */
     renderPopularTags() {
         const container = document.getElementById('popular-tags-list');
         if (!container) return;
 
-        const tags = Object.entries(this.statistics.problems.tags)
+        const tags = Object.entries(this.statistics.problemTags || {})
             .sort((a, b) => b[1] - a[1])
             .slice(0, 10);
 
@@ -274,13 +360,13 @@ class DashboardManager {
     }
 
     /**
-     * 渲染平台分布
+     * 渲染平台分布 - 更新版本
      */
     renderPlatformDistribution() {
         const container = document.getElementById('platform-distribution');
         if (!container) return;
 
-        const platforms = Object.entries(this.statistics.contests.platforms)
+        const platforms = Object.entries(this.statistics.contestPlatforms || {})
             .sort((a, b) => b[1] - a[1]);
 
         if (platforms.length === 0) {
@@ -289,9 +375,9 @@ class DashboardManager {
         }
 
         container.innerHTML = platforms.map(([platform, count]) => `
-            <div class="platform-item">
-                <span class="platform-name">${this.escapeHtml(platform)}</span>
-                <span class="platform-count">${count} 场</span>
+            <div class="platform-item flex justify-between items-center py-2">
+                <span class="platform-name font-medium">${this.escapeHtml(platform)}</span>
+                <span class="platform-count text-gray-600">${count} 场</span>
             </div>
         `).join('');
     }

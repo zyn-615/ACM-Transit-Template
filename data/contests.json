@@ -1,6 +1,20 @@
 {
   "contests": [
     {
+      "id": "cf-round-885",
+      "name": "Codeforces Round 885 (Div. 2)",
+      "platform": "Codeforces",
+      "date": "2024-02-01",
+      "url": "https://codeforces.com/contest/1885",
+      "rank": "1200/15000",
+      "solved": 3,
+      "totalProblems": 6,
+      "ratingChange": "+32",
+      "notes": "测试比赛，用于展示文件系统功能",
+      "addedTime": "2024-02-01T18:00:00Z",
+      "solutions": []
+    },
+    {
       "id": "cf-round-920",
       "name": "Codeforces Round 920 (Div. 2)",
       "platform": "Codeforces",
@@ -53,7 +67,7 @@
   "version": "1.0",
   "lastModified": "2025-01-22T00:00:00.000Z",
   "metadata": {
-    "totalContests": 2,
+    "totalContests": 3,
     "createdBy": "ACM中转站",
     "description": "ACM竞赛记录数据库 - 简化版多人协作",
     "createdAt": "2025-01-22"

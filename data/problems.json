@@ -1,6 +1,36 @@
 {
   "problems": [
     {
+      "id": "cf-round-885-a",
+      "title": "Simple Addition",
+      "platform": "Codeforces",
+      "difficulty": 800,
+      "tags": ["math", "implementation"],
+      "status": "solved",
+      "url": "https://codeforces.com/problem/1885/A",
+      "contestId": "cf-round-885",
+      "problemIndex": "A",
+      "problemLetter": "A",
+      "notes": "基础数学计算题",
+      "addedTime": "2024-02-01T18:05:00Z",
+      "solvedTime": "2024-02-01T18:15:00Z"
+    },
+    {
+      "id": "cf-round-885-b", 
+      "title": "String Processing",
+      "platform": "Codeforces",
+      "difficulty": 1000,
+      "tags": ["string", "implementation"],
+      "status": "solved",
+      "url": "https://codeforces.com/problem/1885/B",
+      "contestId": "cf-round-885",
+      "problemIndex": "B",
+      "problemLetter": "B",
+      "notes": "字符串处理题目",
+      "addedTime": "2024-02-01T18:20:00Z",
+      "solvedTime": "2024-02-01T18:35:00Z"
+    },
+    {
       "id": "cf-1920a",
       "title": "Satisfying Constraints",
       "platform": "Codeforces",
@@ -70,7 +100,7 @@
   "version": "1.0", 
   "lastModified": "2025-01-22T00:00:00.000Z",
   "metadata": {
-    "totalProblems": 3,
+    "totalProblems": 5,
     "createdBy": "ACM中转站",
     "description": "ACM题目记录数据库 - 简化版多人协作",
     "createdAt": "2025-01-22"

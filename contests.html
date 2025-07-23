@@ -120,8 +120,9 @@
                     </div>
                     <div class="form-grid">
                         <div class="form-group">
-                            <label class="form-label" for="contest-pdf">比赛PDF路径</label>
-                            <input type="text" id="contest-pdf" class="form-control" placeholder="./files/contest-pdfs/cf-round-900/contest.pdf">
+                            <label class="form-label" for="contest-pdf-file">比赛PDF文件</label>
+                            <input type="file" id="contest-pdf-file" class="form-control" accept=".pdf">
+                            <div class="form-help">选择比赛PDF文件（可选）</div>
                         </div>
                         <div class="form-group">
                             <label class="form-label" for="contest-summary">总结路径</label>
@@ -279,8 +280,9 @@
                     </div>
                     <div class="form-grid">
                         <div class="form-group">
-                            <label class="form-label" for="edit-contest-pdf">比赛PDF路径</label>
-                            <input type="text" id="edit-contest-pdf" class="form-control">
+                            <label class="form-label" for="edit-contest-pdf-file">比赛PDF文件</label>
+                            <input type="file" id="edit-contest-pdf-file" class="form-control" accept=".pdf">
+                            <div class="form-help">选择比赛PDF文件（可选）</div>
                         </div>
                         <div class="form-group">
                             <label class="form-label" for="edit-contest-summary">总结路径</label>
@@ -480,6 +482,44 @@
             }
         }
 
+        // 处理文件上传
+        function handleFileUpload(fileInput, folder) {
+            const file = fileInput.files[0];
+            if (file) {
+                // 生成标准化文件名
+                const sanitizedName = file.name.replace(/[^\w\-\.]/g, '_');
+                const relativePath = `./files/${folder}/${sanitizedName}`;
+                
+                // 显示文件保存指导
+                const fullPath = `/home/zyn/program/2025-Summer/ACM-Transit/Context-Engineering-Intro/acm-transit/files/${folder}/${sanitizedName}`;
+                
+                showFileUploadGuide(file.name, sanitizedName, fullPath, folder);
+                
+                return relativePath;
+            }
+            return '';
+        }
+        
+        // 显示文件上传指导
+        function showFileUploadGuide(originalName, sanitizedName, fullPath, folder) {
+            const message = `
+文件上传指导：
+\n原文件名: ${originalName}
+标准化名称: ${sanitizedName}
+\n请手动将文件复制到：
+${fullPath}
+\n或者使用命令：
+cp “文件路径” “${fullPath}”
+\n文件已登记到系统中，但需要您手动放置文件才能正常访问。
+            `;
+            
+            if (confirm(message + '\n\n点击确定继续，取消则不保存文件路径。')) {
+                console.log('文件上传指导:', { originalName, sanitizedName, fullPath, folder });
+                return true;
+            }
+            return false;
+        }
+
         // 处理比赛提交
         function handleSubmitContest(event) {
             event.preventDefault();
@@ -493,7 +533,7 @@
                     solved: document.getElementById('contest-solved').value,
                     totalProblems: document.getElementById('contest-total').value,
                     url: document.getElementById('contest-url').value,
-                    pdfPath: document.getElementById('contest-pdf').value,
+                    pdfPath: handleFileUpload(document.getElementById('contest-pdf-file'), 'contest-pdfs'),
                     summaryPath: document.getElementById('contest-summary').value,
                     notes: document.getElementById('contest-notes').value,
                     autoGenerateCount: document.getElementById('auto-generate-count').value
@@ -638,7 +678,7 @@
             document.getElementById('edit-contest-solved').value = contest.solved || '';
             document.getElementById('edit-contest-total').value = contest.totalProblems || '';
             document.getElementById('edit-contest-url').value = contest.url || '';
-            document.getElementById('edit-contest-pdf').value = contest.pdfPath || '';
+            // Note: File input cannot be pre-populated for security reasons
             document.getElementById('edit-contest-summary').value = contest.summaryPath || '';
             document.getElementById('edit-contest-notes').value = contest.notes || '';
 
@@ -659,7 +699,7 @@
                     solved: document.getElementById('edit-contest-solved').value,
                     totalProblems: document.getElementById('edit-contest-total').value,
                     url: document.getElementById('edit-contest-url').value,
-                    pdfPath: document.getElementById('edit-contest-pdf').value,
+                    pdfPath: handleFileUpload(document.getElementById('edit-contest-pdf-file'), 'contest-pdfs') || currentEditingContest?.pdfPath || '',
                     summaryPath: document.getElementById('edit-contest-summary').value,
                     notes: document.getElementById('edit-contest-notes').value,
                     autoGenerateCount: document.getElementById('edit-auto-generate-count').value

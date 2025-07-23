@@ -85,17 +85,15 @@
                 </div>
                 <div class="form-grid">
                     <div class="form-group">
-                        <label class="form-label">题目PDF</label>
-                        <div class="form-value" id="problem-pdf-display">
-                            <a href="#" id="problem-pdf-link" target="_blank" style="display: none;">查看PDF</a>
-                            <span id="problem-pdf-empty">无</span>
+                        <label class="form-label">题目文件</label>
+                        <div class="form-value" id="problem-files-display">
+                            <div id="problem-files-container">正在加载文件...</div>
                         </div>
                     </div>
                     <div class="form-group">
                         <label class="form-label">题解文件</label>
-                        <div class="form-value" id="problem-solution-display">
-                            <a href="#" id="problem-solution-link" target="_blank" style="display: none;">查看题解</a>
-                            <span id="problem-solution-empty">无</span>
+                        <div class="form-value" id="solution-files-display">
+                            <div id="solution-files-container">正在加载题解...</div>
                         </div>
                     </div>
                 </div>
@@ -129,6 +127,11 @@
         <div class="card">
             <div class="card-header">
                 <h2 class="card-title">题解管理</h2>
+                <div class="card-actions">
+                    <button class="btn btn-primary btn-sm" onclick="openSolutionManager()">
+                        📝 管理题解文件
+                    </button>
+                </div>
             </div>
             <div class="form-container">
                 <div id="solutions-container">
@@ -154,10 +157,12 @@
 
     <!-- 加载 JavaScript -->
     <script src="js/storage.js"></script>
+    <script src="js/contest-generator.js"></script>
     <script src="js/problems.js"></script>
     <script src="js/contests.js"></script>
     <script src="js/solution-manager.js"></script>
     <script src="js/search.js"></script>
+    <script src="js/file-manager.js"></script>
     
     <script>
         // 全局变量
@@ -340,7 +345,7 @@
         }
 
         // 更新题目信息显示
-        function updateProblemInfo() {
+        async function updateProblemInfo() {
             document.getElementById('problem-title').textContent = currentProblem.title;
             document.getElementById('problem-info').textContent = 
                 `${currentProblem.platform}${currentProblem.problemIndex ? ' • ' + currentProblem.problemIndex : ''}`;
@@ -396,25 +401,8 @@
                 document.getElementById('problem-contest-empty').style.display = 'inline';
             }
 
-            // 题目PDF
-            if (currentProblem.pdfPath) {
-                document.getElementById('problem-pdf-link').href = currentProblem.pdfPath;
-                document.getElementById('problem-pdf-link').style.display = 'inline';
-                document.getElementById('problem-pdf-empty').style.display = 'none';
-            } else {
-                document.getElementById('problem-pdf-link').style.display = 'none';
-                document.getElementById('problem-pdf-empty').style.display = 'inline';
-            }
-
-            // 题解文件
-            if (currentProblem.solutionPath) {
-                document.getElementById('problem-solution-link').href = currentProblem.solutionPath;
-                document.getElementById('problem-solution-link').style.display = 'inline';
-                document.getElementById('problem-solution-empty').style.display = 'none';
-            } else {
-                document.getElementById('problem-solution-link').style.display = 'none';
-                document.getElementById('problem-solution-empty').style.display = 'inline';
-            }
+            // 加载相关文件
+            await loadProblemFiles();
 
             // 标签
             if (currentProblem.tags && currentProblem.tags.length > 0) {
@@ -453,6 +441,87 @@
                     currentProblem.id, 
                     false
                 );
+            }
+        }
+
+        // 加载题目相关文件
+        async function loadProblemFiles() {
+            try {
+                if (!window.fileManager) {
+                    document.getElementById('problem-files-container').innerHTML = '<span class="text-gray-500">文件管理器未初始化</span>';
+                    document.getElementById('solution-files-container').innerHTML = '<span class="text-gray-500">文件管理器未初始化</span>';
+                    return;
+                }
+
+                // 确定比赛ID和题目字母
+                let contestId = currentProblem.contestId;
+                let problemLetter = currentProblem.problemLetter;
+
+                // 如果没有比赛ID，尝试从题目ID中推断
+                if (!contestId && currentProblem.id) {
+                    const match = currentProblem.id.match(/^([^-]+)-([a-zA-Z])$/);
+                    if (match) {
+                        contestId = match[1];
+                        problemLetter = match[2].toUpperCase();
+                    }
+                }
+
+                if (contestId && problemLetter) {
+                    // 渲染题目相关文件
+                    const problemFilesHtml = await window.fileManager.renderProblemFiles(contestId, problemLetter);
+                    if (problemFilesHtml) {
+                        const tempDiv = document.createElement('div');
+                        tempDiv.innerHTML = problemFilesHtml;
+                        
+                        // 提取题面文件
+                        const problemSection = tempDiv.querySelector('.file-section h4');
+                        if (problemSection && problemSection.textContent === '题面') {
+                            const problemFiles = problemSection.nextElementSibling;
+                            document.getElementById('problem-files-container').innerHTML = problemFiles ? problemFiles.outerHTML : '<span class="text-gray-500">暂无题面文件</span>';
+                        } else {
+                            document.getElementById('problem-files-container').innerHTML = '<span class="text-gray-500">暂无题面文件</span>';
+                        }
+                        
+                        // 提取题解文件
+                        const solutionSection = Array.from(tempDiv.querySelectorAll('.file-section h4')).find(h => h.textContent === '题解');
+                        if (solutionSection && solutionSection.nextElementSibling) {
+                            document.getElementById('solution-files-container').innerHTML = solutionSection.nextElementSibling.innerHTML;
+                        } else {
+                            document.getElementById('solution-files-container').innerHTML = '<span class="text-gray-500">暂无题解文件</span>';
+                        }
+                    } else {
+                        document.getElementById('problem-files-container').innerHTML = '<span class="text-gray-500">暂无题面文件</span>';
+                        document.getElementById('solution-files-container').innerHTML = '<span class="text-gray-500">暂无题解文件</span>';
+                    }
+                } else {
+                    // 兼容原有的PDF和题解路径显示
+                    let problemFilesHtml = '';
+                    let solutionFilesHtml = '';
+                    
+                    if (currentProblem.pdfPath) {
+                        problemFilesHtml = `<a href="${currentProblem.pdfPath}" target="_blank" class="file-link">📄 题目PDF</a>`;
+                    }
+                    
+                    if (currentProblem.solutionPath) {
+                        const ext = currentProblem.solutionPath.split('.').pop().toLowerCase();
+                        const icon = ext === 'pdf' ? '📄' : '📝';
+                        const fileName = currentProblem.solutionPath.split('/').pop();
+                        
+                        if (ext === 'md') {
+                            const viewerUrl = `file-viewer.html?file=${encodeURIComponent(currentProblem.solutionPath)}&name=${encodeURIComponent(fileName)}`;
+                            solutionFilesHtml = `<a href="${viewerUrl}" target="_blank" class="file-link">${icon} ${fileName}</a>`;
+                        } else {
+                            solutionFilesHtml = `<a href="${currentProblem.solutionPath}" target="_blank" class="file-link">${icon} ${fileName}</a>`;
+                        }
+                    }
+                    
+                    document.getElementById('problem-files-container').innerHTML = problemFilesHtml || '<span class="text-gray-500">暂无题面文件</span>';
+                    document.getElementById('solution-files-container').innerHTML = solutionFilesHtml || '<span class="text-gray-500">暂无题解文件</span>';
+                }
+            } catch (error) {
+                console.error('加载文件失败:', error);
+                document.getElementById('problem-files-container').innerHTML = '<span class="text-red-500">文件加载失败</span>';
+                document.getElementById('solution-files-container').innerHTML = '<span class="text-red-500">文件加载失败</span>';
             }
         }
 
@@ -559,6 +628,30 @@
         function addToCustomContest() {
             // 这里可以实现添加到自定义比赛的功能
             showNotification('此功能正在开发中', 'info');
+        }
+
+        // 打开题解管理器
+        function openSolutionManager() {
+            if (!currentProblem) {
+                showNotification('题目信息未加载', 'error');
+                return;
+            }
+            
+            // 保存当前题目ID到localStorage
+            localStorage.setItem('current-problem-id', currentProblem.id);
+            
+            // 在新窗口中打开题解管理器
+            const managerWindow = window.open(
+                `solution-manager.html?problemId=${encodeURIComponent(currentProblem.id)}`,
+                'solution-manager',
+                'width=1000,height=800,scrollbars=yes,resizable=yes'
+            );
+            
+            if (!managerWindow) {
+                showNotification('无法打开题解管理器窗口，请检查浏览器的弹窗设置', 'error');
+            } else {
+                showNotification('题解管理器已打开', 'success');
+            }
         }
 
         // 返回上一页
@@ -694,6 +787,51 @@
         .tag-graph { background: #f3e8ff; color: #7c3aed; }
         .tag-math { background: #fef3c7; color: #d97706; }
         .tag-string { background: #fce7f3; color: #be185d; }
+
+        /* 文件链接样式 */
+        .file-link {
+            display: inline-block;
+            margin-right: 0.5rem;
+            margin-bottom: 0.25rem;
+            padding: 0.25rem 0.5rem;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 4px;
+            text-decoration: none;
+            color: #374151;
+            font-size: 0.875rem;
+            transition: all 0.2s ease;
+        }
+
+        .file-link:hover {
+            background: #e2e8f0;
+            border-color: #cbd5e1;
+            text-decoration: none;
+        }
+
+        .file-link-pdf {
+            border-left: 3px solid #dc2626;
+        }
+
+        .file-link-md {
+            border-left: 3px solid #059669;
+        }
+
+        .file-section {
+            margin-bottom: 1rem;
+        }
+
+        .file-section h4 {
+            display: none; /* 隐藏section标题，因为我们在form-label中已经有了 */
+        }
+
+        .text-gray-500 {
+            color: #6b7280;
+        }
+
+        .text-red-500 {
+            color: #ef4444;
+        }
     </style>
 </body>
 </html>

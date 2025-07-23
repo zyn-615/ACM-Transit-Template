@@ -142,6 +142,11 @@ class ContestDetailManager {
             this.renderProblemBoard();
             this.renderStatsSummary();
             
+            // 触发ICPC横栏更新
+            if (typeof refreshICPCBoard === 'function') {
+                refreshICPCBoard();
+            }
+            
         } catch (error) {
             console.error('渲染比赛详情失败:', error);
             this.renderError('渲染页面失败: ' + error.message);
@@ -237,7 +242,7 @@ class ContestDetailManager {
                         </div>
                         <div class="stat-row">
                             <span>罚时:</span>
-                            <span>${record.penalty}分钟</span>
+                            <span>${this.calculateProblemPenalty(record)}分钟</span>
                         </div>
                     </div>
                     <div class="problem-actions">
@@ -401,12 +406,27 @@ class ContestDetailManager {
     }
 
     /**
+     * 计算单个题目的罚时
+     */
+    calculateProblemPenalty(record) {
+        if (!record || record.status !== 'AC') {
+            return 0; // 未通过的题目不计罚时
+        }
+        
+        const acTime = record.acTime || 0;
+        const attempts = record.attempts || 1;
+        const wrongAttempts = Math.max(0, attempts - 1);
+        
+        return acTime + (wrongAttempts * 20);
+    }
+
+    /**
      * 计算总罚时
      */
     calculateTotalPenalty() {
-        return Object.values(this.contestRecord.problemResults).reduce((total, result) => 
-            total + (result.penalty || 0), 0
-        );
+        return Object.values(this.contestRecord.problemResults).reduce((total, result) => {
+            return total + this.calculateProblemPenalty(result);
+        }, 0);
     }
 
     /**
